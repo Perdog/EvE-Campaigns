@@ -27,7 +27,7 @@
 </head>
 <body>
 
-	<div id="campaign-page" class="dynamic-content">
+	<div id="default-page" class="dynamic-content">
 		<div id="statsHeader">
 			<h2 style="text-align:center">
 				Kill stats
@@ -74,14 +74,6 @@
 				<div class="sidebar" id="rightspacer"></div>
 			</div>
 		</div>
-	</div>
-	
-	<div id="loading-page" class="dynamic-content">
-		
-	</div>
-	
-	<div id="default-page" class="dynamic-content">
-	
 	</div>
 	
 	<script type="text/javascript" src="https://code.jquery.com/jquery-3.2.0.min.js"></script>
