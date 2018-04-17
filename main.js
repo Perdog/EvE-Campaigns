@@ -39,7 +39,7 @@ $(document).ready(function(){
 		
 		$('#loading-page').show(500);
 		
-		// TODO Check for cache here
+		// TODO Check for cache here, if cache exists skip all the fetching.
 		getNames(aIDs.concat(bIDs));
 		
 	} else {
@@ -218,12 +218,14 @@ function parseSystems() {
 		});
 		
 		$("#load-text").text("System names loaded...");
+		console.log("Name fetch is done");
 		pullStats();
 	}
 }
 
 function pullStats() {
 	$("#load-text").text("Parsing all this info...");
+	console.log("Loading everything onto the page");
 	
 	//for (var i = 0; i < allKills.length; i++) {}
 	
@@ -261,6 +263,7 @@ function pullStats() {
 	$('#TeamA').find('#systems').append(aTeamSystems);
 	$('#TeamB').find('#systems').append(bTeamSystems);
 	sortTables();
+	console.log("Done");
 	$("#load-text").text("Ready to go");
 	$('#loading-page').hide(1500);
 	$('#campaign-page').show(1500);
