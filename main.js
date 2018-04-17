@@ -262,8 +262,8 @@ function pullStats() {
 	$('#TeamB').find('#systems').append(bTeamSystems);
 	sortTables();
 	$("#load-text").text("Ready to go");
-	$('#loading-page').hide(600);
-	$('#campaign-page').show(600);
+	$('#loading-page').hide(1500);
+	$('#campaign-page').show(1500);
 }
 
 function sortTables() {
