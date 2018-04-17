@@ -13,20 +13,33 @@
 		}
 		
 		.sidebar {
-			flex: 20%
+			flex: 12%
 		}
 		
 		.column {
-			flex: 30%;
+			flex: 32%;
 		}
 		
 		.titles {
 			text-align: right;
 		}
+		#loading-page {
+			text-align: center;
+			position: absolute;
+			width: 300px;
+			height: 100px;
+			z-index: 15;
+			top: 50%;
+			left: 50%;
+			margin: -100px 0 0 -150px;
+		}
 	</style>
 </head>
 <body>
-
+	<div id="loading-page" class="dynamic-content">
+		<p>Loading...</p>
+		<p id="load-text"></p>
+	</div>
 	<div id="campaign-page" class="dynamic-content">
 		<div id="statsHeader">
 			<h2 style="text-align:center">
@@ -39,7 +52,9 @@
 				
 				<div class="column" id="TeamA">
 					<h2 style="text-align:center"><u>Team A</u></h2>
-					
+					<br />
+					<div id="names" style="text-align:center"></div>
+					<br />
 					<div class="row" id="statsKills">
 						<div class="column">
 							<a>Total kills</a>
@@ -47,16 +62,25 @@
 							<a>Total value</a>
 						</div>
 						<div class="column">
-							<a id="kills">4</a>
+							<a id="kills">0</a>
 							<br />
-							<a id="value">1,000,000</a>
+							<a id="value">0</a>
 						</div>
 					</div>
+					<table>
+						<tbody id="systems" style="text-align:center">
+						
+						</tbody>
+					</table>
 				</div>
+				
+				<div class="sidebar" id="middlespacer"></div>
 				
 				<div class="column" id="TeamB">
 					<h2 style="text-align:center"><u>Team B</u></h2>
-					
+					<br />
+					<div id="names" style="text-align:center"></div>
+					<br />
 					<div class="row" id="statsKills">
 						<div class="column">
 							<a class="titles">Total kills</a>
@@ -64,10 +88,17 @@
 							<a class="titles">Total value</a>
 						</div>
 						<div class="column">
-							<a id="kills">4</a>
+							<a id="kills">0</a>
 							<br />
-							<a id="value">1,000,000</a>
+							<a id="value">0</a>
 						</div>
+					</div>
+					<div class="row">
+					<table>
+						<tbody id="systems" style="text-align:center">
+						
+						</tbody>
+					</table>
 					</div>
 				</div>
 				
