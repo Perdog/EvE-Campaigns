@@ -69,7 +69,7 @@ $('#campaign-form').submit(function(e) {
 	var url = "https://esi.tech.ccp.is/latest/universe/ids/?datasource=tranquility";
 	var fetch = new XMLHttpRequest();
 	fetch.onload = checkNames;
-	fetch.onerror = reqerror;
+	fetch.onerror = nameError;
 	fetch.open('post', url, true);
 	fetch.setRequestHeader('Content-Type','application/json');
 	fetch.setRequestHeader('accept','application/json');
@@ -125,6 +125,12 @@ function checkNames() {
 			location.search = "teamA=" + aIDs.toString() + "&teamB=" + bIDs.toString() + "&dates=" + document.getElementById("startDate").value.replace(/-/g,"") + "0000-" + document.getElementById("endDate").value.replace(/-/g,"") + "2300";
 		}
 	}
+}
+
+function nameError(error) {
+	$('#createCampaign').removeAttr("disabled");
+	console.log("Error while getting IDs: " + error);
+	alert("Something went wrong when looking up name IDs: \n" + error);
 }
 
 function getNames(list) {
@@ -249,6 +255,7 @@ function reqsuc() {
 
 function reqerror(error) {
 	console.log("Oh no! Something's wrong!\n" + error);
+	$("#load-text").text("Something bad happened somewhere...\n" + error);
 }
 
 function doneFetchingKills() {
