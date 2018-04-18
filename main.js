@@ -1,3 +1,6 @@
+// Default page stuff
+var namesList = [];
+
 // Search query stuff
 var allIDs = {};
 var aIDs = [];
@@ -45,9 +48,84 @@ $(document).ready(function(){
 	} else {
 		// If not, load normal page
 		console.log("No bueno");
-		$('@default-page').show();
+		$('#default-page').show();
+		var date = new Date();
+		$('#endDate').attr("max", date.getFullYear() + "-" + (date.getMonth() < 9 ? "0" : "") + (date.getMonth() + 1) + "-" + (date.getDate() < 10 ? "0" : "") + date.getDate());
 	}
 });
+
+$('#campaign-form').submit(function(e) {
+	e.preventDefault();
+	$('#createCampaign').attr("disabled", "disabled");
+	
+	namesList = [];
+	var names = document.getElementsByClassName("searchbox");
+	
+	for (var i = 0; i < names.length; i++) {
+		if (names[i].value.length > 0)
+			namesList.push(names[i].value);
+	}
+	
+	var url = "https://esi.tech.ccp.is/latest/universe/ids/?datasource=tranquility";
+	var fetch = new XMLHttpRequest();
+	fetch.onload = checkNames;
+	fetch.onerror = reqerror;
+	fetch.open('post', url, true);
+	fetch.setRequestHeader('Content-Type','application/json');
+	fetch.setRequestHeader('accept','application/json');
+	fetch.send(JSON.stringify(namesList));
+	
+	return false;
+});
+
+function checkNames() {
+	var data = JSON.parse(this.responseText);
+	var betterList = {};
+	
+	console.log(data);
+	
+	if (data.error) {
+		esiError(data.error);
+	} else {
+		var newData = Object.values(data);
+		var fail = false;
+		
+		for (var h = 0; h < newData.length; h++) {
+			for (var i = 0; i < newData[h].length; i++) {
+				betterList[newData[h][i].name.toLowerCase()] = newData[h][i].id;
+			}
+		}
+		console.log(betterList);
+		
+		var listKeys = Object.keys(betterList);
+		for (var j = 0; j < 2; j++) {
+			var team = (j == 0 ? "A" : "B");
+			var elems = document.getElementsByClassName(team);
+			
+			for (var k = 0; k < elems.length; k++) {
+				if (elems[k].value.length > 0) {
+					if (listKeys.includes(elems[k].value.toLowerCase())) {
+						console.log("Found");
+						if (team == "A")
+							aIDs.push(betterList[elems[k].value.toLowerCase()]);
+						else
+							bIDs.push(betterList[elems[k].value.toLowerCase()]);
+					} else {
+						console.log("Not found: " + elems[k].value.toLowerCase());
+						alert("Could not find the entity \"" + elems[k].value + "\"\nDouble check that you've spelt the name correctly.");
+						elems[k].style.backgroundColor = "red";
+						$('#createCampaign').removeAttr("disabled");
+						fail = true;
+					}
+				}
+			}
+		}
+		
+		if (!fail) {
+			location.search = "teamA=" + aIDs.toString() + "&teamB=" + bIDs.toString() + "&dates=" + document.getElementById("startDate").value.replace(/-/g,"") + "0000-" + document.getElementById("endDate").value.replace(/-/g,"") + "2300";
+		}
+	}
+}
 
 function getNames(list) {
 	$("#load-text").text("Attempting to load team names...");
@@ -267,6 +345,26 @@ function pullStats() {
 	$("#load-text").text("Ready to go");
 	$('#loading-page').hide(1500);
 	$('#campaign-page').show(1500);
+}
+
+function dateChange(elem, target, attribute) {
+	$(target).attr(attribute, elem.value);
+	console.log($(target)[0].checkValidity());
+}
+
+function testStuff() {
+	var start = $('#startDate');
+	
+	console.log(start[0].checkValidity());
+}
+
+function addField(elem) {
+	var item = elem.parentElement.lastElementChild;
+	var clone = item.cloneNode(true);
+	clone.value = "";
+	clone.removeAttribute("required");
+	
+	elem.parentNode.appendChild(clone);
 }
 
 function sortTables() {

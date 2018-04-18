@@ -18,10 +18,15 @@
 		
 		.column {
 			flex: 32%;
+			text-align: center;
 		}
 		
 		.titles {
-			text-align: right;
+			text-align: center;
+		}
+		.form-control {
+			width: 100%;
+			text-align: center;
 		}
 		#loading-page {
 			text-align: center;
@@ -83,9 +88,9 @@
 					<br />
 					<div class="row" id="statsKills">
 						<div class="column">
-							<a class="titles">Total kills</a>
+							<a>Total kills</a>
 							<br />
-							<a class="titles">Total value</a>
+							<a>Total value</a>
 						</div>
 						<div class="column">
 							<a id="kills">0</a>
@@ -107,12 +112,51 @@
 		</div>
 	</div>
 	
-	<div id="loading-page" class="dynamic-content">
-		
-	</div>
-	
 	<div id="default-page" class="dynamic-content">
-	
+		<h1 style="text-align:center">
+			EvE Campaign Generator
+			<br />
+		</h1>
+		<p style="text-align:center">Type the full names of corps or alliances on either team, then add a date that you want to search. When you hit submit, the webpage will scream at you if you got a name wrong.</p>
+		<form id="campaign-form">
+			<div class="row">
+				<div class="sidebar"></div>
+				<div class="column" id="teamA">
+					<div class="form-group" style="text-align:center">
+						<h3>Team A</h3>
+						<input type="button" class="form-control" value="Add textbox" onclick="addField(this)">
+						<input type="text" class="form-control searchbox A" placeholder="Enter corp or alliance name" autocomplete="off" id="searchbox" required="required">
+					</div>
+				</div>
+				<div class="sidebar"></div>
+				<div class="column" id="teamB">
+					<div class="form-group" style="text-align:center">
+						<h3>Team B</h3>
+						<input type="button" class="form-control" value="Add textbox" onclick="addField(this)">
+						<input type="text" class="form-control searchbox B" placeholder="Enter corp or alliance name" autocomplete="off" id="searchbox" required="required">
+					</div>
+				</div>
+				<div class="sidebar"></div>
+			</div>
+			<br />
+			<div class="row">
+				<div class="sidebar"></div>
+				<div class="column">
+					<p>Enter a start date</p>
+					<input type="date" id="startDate" min="2010-01-01" onchange="dateChange(this, '#endDate', 'min')" required>
+				</div>
+				<div class="sidebar"></div>
+				<div class="column">
+					<p>Enter an end date</p>
+					<input type="date" id="endDate" min="2010-01-01" onchange="dateChange(this, '#startDate', 'max')" required>
+				</div>
+				<div class="sidebar"></div>
+			</div>
+			<br />
+			<div style="text-align:center">
+				<input type="submit" value="Create Campaign" onclick="testStuff()" id="createCampaign">
+			</div>
+		</form>
 	</div>
 	
 	<script type="text/javascript" src="https://code.jquery.com/jquery-3.2.0.min.js"></script>
