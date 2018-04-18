@@ -307,6 +307,9 @@ function pullStats() {
 	
 	//for (var i = 0; i < allKills.length; i++) {}
 	
+	// Header things
+	$('#when').text("Campaign between the dates of " + (dates[0].slice(0,4)+"-"+dates[0].slice(4,6)+"-"+dates[0].slice(6,8)) + " and " + (dates[1].slice(0,4)+"-"+dates[1].slice(4,6)+"-"+dates[1].slice(6,8)));
+	
 	// Set names. We loop through allIDs and compare it to the teamIDs, attaching them to the appropriate string.
 	var aTeamNames = "";
 	var bTeamNames = "";
