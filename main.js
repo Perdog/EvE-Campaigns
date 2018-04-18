@@ -189,6 +189,7 @@ function getNextPage() {
 	}
 }
 
+var mailIDs = [];
 function reqsuc() {
 	var data = JSON.parse(this.responseText);
 	
@@ -203,29 +204,33 @@ function reqsuc() {
 		if (Object.keys(allIDs).includes(data[i].victim.alliance_id + "") || Object.keys(allIDs).includes(data[i].victim.corporation_id + "")) {
 			// If either true, we want to keep this data
 			console.log("Keeping one");
-			allKills.push(data[i]);
 			
-			// STATS COLLECTION
-			// Used for the arrays. Defaulting to -1 for error catching. Should never see it, but juuuuuust in case.
-			var team = getTeam(data[i].victim);
-			if (team >= 0) {
-				// Track total kills
-				totalKills[team] += 1;
-				
-				// Track total kill values
-				totalValues[team] += data[i].zkb.totalValue;
-				
-				// Track kills per ship per team
-					// Topkeks that's gonna be fun
-				
-				// Track kills per system per team
-				if (!systems[team])
-					systems[team] = {};
-				if (!systems[team][data[i].solar_system_id]) {
-					systems[team][data[i].solar_system_id] = {};
-					systems[team][data[i].solar_system_id].kills = 0;
+			if (!mailIDs.includes(data[i].killmail_id)) {
+				allKills.push(data[i]);
+				mailIDs.push(data[i].killmail_id);
+			
+				// STATS COLLECTION
+				// Used for the arrays. Defaulting to -1 for error catching. Should never see it, but juuuuuust in case.
+				var team = getTeam(data[i].victim);
+				if (team >= 0) {
+					// Track total kills
+					totalKills[team] += 1;
+					
+					// Track total kill values
+					totalValues[team] += data[i].zkb.totalValue;
+					
+					// Track kills per ship per team
+						// Topkeks that's gonna be fun
+					
+					// Track kills per system per team
+					if (!systems[team])
+						systems[team] = {};
+					if (!systems[team][data[i].solar_system_id]) {
+						systems[team][data[i].solar_system_id] = {};
+						systems[team][data[i].solar_system_id].kills = 0;
+					}
+					systems[team][data[i].solar_system_id].kills += 1;
 				}
-				systems[team][data[i].solar_system_id].kills += 1;
 			}
 		}
 	}
