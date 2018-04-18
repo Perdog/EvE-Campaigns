@@ -183,8 +183,8 @@ function getNextPage() {
 		for (var i = 0; i < idLength; i++) {
 			waitingOn++;
 			var id = Object.keys(allIDs)[i];
-			var zurl = base + (allIDs[id].type == "alliance" ? alli + id : corp + id) + sTime + dates[0] + eTime + dates[1] + page + pageNumber + dontForgetThis;
-			
+			var zurl = base + allIDs[id].type + "ID/" + id + sTime + dates[0] + eTime + dates[1] + page + pageNumber + dontForgetThis;
+			console.log(zurl);
 			var fetch = new XMLHttpRequest();
 			fetch.onload = reqsuc;
 			fetch.onerror = reqerror;
@@ -207,7 +207,7 @@ function reqsuc() {
 	// Lets do something with the data
 	for (var i = 0; i < data.length; i++) {
 		// Make sure the victim is in our list of wanted IDs (Checking all of them since we don't know which fetch call this came from)
-		if (Object.keys(allIDs).includes(data[i].victim.alliance_id + "") || Object.keys(allIDs).includes(data[i].victim.corporation_id + "")) {
+		if (Object.keys(allIDs).includes(data[i].victim.alliance_id + "") || Object.keys(allIDs).includes(data[i].victim.corporation_id + "") || Object.keys(allIDs).includes(data[i].victim.character_id + "")) {
 			// If either true, we want to keep this data
 			console.log("Keeping one");
 			
@@ -422,14 +422,14 @@ function sortTables() {
 
 function getTeam(victim) {
 	if (victim.alliance_id) {
-		if (aIDs.includes(victim.alliance_id+"") || aIDs.includes(victim.corporation_id+""))
+		if (aIDs.includes(victim.alliance_id+"") || aIDs.includes(victim.corporation_id+"") || aIDs.includes(victim.character_id+""))
 			return 1;
-		else if (bIDs.includes(victim.alliance_id+"") || bIDs.includes(victim.corporation_id+""))
+		else if (bIDs.includes(victim.alliance_id+"") || bIDs.includes(victim.corporation_id+"") || bIDs.includes(victim.character_id+""))
 			return 0;
 	}
-	else if (aIDs.includes(victim.corporation_id+""))
+	else if (aIDs.includes(victim.corporation_id+"") || aIDs.includes(victim.character_id+""))
 		return 1;
-	else if (bIDs.includes(victim.corporation_id+""))
+	else if (bIDs.includes(victim.corporation_id+"") || bIDs.includes(victim.character_id+""))
 		return 0;
 	
 	return -1;
