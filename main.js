@@ -17,6 +17,7 @@ var keepSearching = false;
 var totalKills = [0,0];
 var totalValues = [0,0];
 var systems = [];
+var mailIDs = [];
 
 $(document).ready(function(){
 	/*
@@ -58,7 +59,8 @@ $('#campaign-form').submit(function(e) {
 	e.preventDefault();
 	$('#createCampaign').attr("disabled", "disabled");
 	
-	namesList = [];
+	resetAllTheThings();
+	
 	var names = document.getElementsByClassName("searchbox");
 	
 	for (var i = 0; i < names.length; i++) {
@@ -77,6 +79,14 @@ $('#campaign-form').submit(function(e) {
 	
 	return false;
 });
+
+function resetAllTheThings() {
+	namesList = [];
+	allIDs = {};
+	aIDs = [];
+	bIDs = [];
+	dates = [];
+}
 
 function checkNames() {
 	var data = JSON.parse(this.responseText);
@@ -195,7 +205,6 @@ function getNextPage() {
 	}
 }
 
-var mailIDs = [];
 function reqsuc() {
 	var data = JSON.parse(this.responseText);
 	
