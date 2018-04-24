@@ -265,8 +265,15 @@ function doneFetchingKills() {
 	// Sort kills by date
 	allKills.sort(by('killmail_time'));
 	
-	// Do system name lookups
-	loadSystemNames();
+	// Check if there are any kills
+	if (allKills.length > 0) {
+		// Do system name lookups
+		loadSystemNames();
+	} else {
+		$("#load-static").text("No kills were found for this campaign. Git gud.");
+		$("#load-text").text("");
+		pullStats();
+	}
 }
 
 function loadSystemNames() {
@@ -357,9 +364,11 @@ function pullStats() {
 	$('#TeamB').find('#systems').append(bTeamSystems);
 	sortTables();
 	console.log("Done");
-	$("#load-text").text("Ready to go");
-	$('#loading-page').hide(1500);
-	$('#campaign-page').show(1500);
+	setTimeout(function() {
+		$("#load-text").text("Ready to go");
+		$('#loading-page').hide(2000);
+		$('#campaign-page').show(2000);
+	}, 1000);
 }
 
 function dateChange(elem, target, attribute) {
