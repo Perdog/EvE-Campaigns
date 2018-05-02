@@ -227,6 +227,7 @@ function reqsuc() {
 				continue;
 			}
 			// We also need to ignore "whored" kills
+			// TODO ... BALLS. The logic here needs to be changed. Just because someone whored doesn't mean the kill *needs* to be ignored, only needs to be ignored it that's the *only* reason a kill is showing up
 			else {
 				loop2:
 				for (var j = 0; j < data[i].attackers.length; j++) {
