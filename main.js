@@ -215,26 +215,36 @@ function reqsuc() {
 	$("#load-text").text("Parsing kill data...");
 	
 	// Lets do something with the data
-	loop1:
 	for (var i = 0; i < data.length; i++) {
 		var victim = data[i].victim;
+		// Used for the arrays. Defaulting to -1 for error catching. Should never see it, but juuuuuust in case.
+		var team = getTeam(victim);
+		
 		// Make sure the victim is in our list of wanted IDs (Checking all of them since we don't know which fetch call this came from)
 		if (Object.keys(allIDs).includes(victim.alliance_id + "") || Object.keys(allIDs).includes(victim.corporation_id + "") || Object.keys(allIDs).includes(victim.character_id + "")) {
 			
 			// We don't want awox kills to be counted they throw off the totals.
 			if (data[i].zkb.awox) {
-				console.log("Not keeping, awox");
+				console.log("Don't keep, awox");
 				continue;
 			}
 			// We also need to ignore "whored" kills
 			// TODO ... BALLS. The logic here needs to be changed. Just because someone whored doesn't mean the kill *needs* to be ignored, only needs to be ignored it that's the *only* reason a kill is showing up
 			else {
-				loop2:
+				var hasWhore = false;
+				var whoreOnly = true;
+				var useIDs = (team == 0 ? aIDs : bIDs);
 				for (var j = 0; j < data[i].attackers.length; j++) {
 					if (data[i].attackers[j].corporation_id == victim.corporation_id || data[i].attackers[j].alliance_id == victim.alliance_id) {
-						console.log("Twas a whore");
-						continue loop1;
+						hasWhore = true;
+					} else if (Object.keys(useIDs).includes(data[i].attackers[j].corporation_id) || Object.keys(useIDs).includes(data[i].attackers[j].alliance_id) || Object.keys(useIDs).includes(data[i].attackers[j].character_id)) {
+						whoreOnly = false;
 					}
+					
+				}
+				if (hasWhore && whoreOnly) {
+					console.log("Just a whore, please ignore");
+					continue;
 				}
 			}
 			
@@ -246,8 +256,6 @@ function reqsuc() {
 				mailIDs.push(data[i].killmail_id);
 			
 				// STATS COLLECTION
-				// Used for the arrays. Defaulting to -1 for error catching. Should never see it, but juuuuuust in case.
-				var team = getTeam(victim);
 				if (team >= 0) {
 					// Track total kills
 					totalKills[team] += 1;
