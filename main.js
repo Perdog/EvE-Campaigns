@@ -9,6 +9,7 @@ var dates = [];
 
 // Kills stuff
 var allKills = [];
+var doneFetching = {};
 var waitingOn = 0;
 var pageNumber = 0;
 var keepSearching = false;
@@ -195,8 +196,24 @@ function getNextPage() {
 		var dontForgetThis = "/";
 		
 		for (var i = 0; i < idLength; i++) {
-			waitingOn++;
 			var id = Object.keys(allIDs)[i];
+		
+			if (!doneFetching.hasOwnProperty(id)) {
+				doneFetching[id] = {};
+				doneFetching[id].checked = 0;
+				doneFetching[id].keepGoing = true;
+				doneFetching[id].max = howMany;
+			}
+			
+			if (!doneFetching[id].keepGoing) {
+				console.log("Not bothering to fetch kills for " + id);
+				continue;
+			}
+			
+			waitingOn++;
+			if (h === 0)
+				doneFetching[id].checked = 0;
+			
 			var zurl = base + allIDs[id].type + "ID/" + id + sTime + dates[0] + eTime + dates[1] + page + pageNumber + dontForgetThis;
 			console.log(zurl);
 			var fetch = new XMLHttpRequest();
@@ -211,9 +228,21 @@ function getNextPage() {
 
 function reqsuc() {
 	var data = JSON.parse(this.responseText);
+	var id = this.responseURL;
+	id = id.substring(id.indexOf("ID/")+3);
+	id = id.substring(0, id.indexOf("/"));
 	
-	if (data.length > 1)
+	// If the page contains data, we want to keep our requests going, if not, we want to add the ID from this fetch to the ignore list
+	if (data.length > 1 && !keepSearching)
 		keepSearching = true;
+	
+	if (data.length < 1) {
+		doneFetching[id].checked++;
+		
+		if (doneFetching[id].checked == doneFetching[id].max) {
+			doneFetching[id].keepGoing = false;
+		}
+	}
 	
 	$("#load-text").text("Parsing kill data...");
 	
