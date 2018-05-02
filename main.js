@@ -132,6 +132,7 @@ function checkNames() {
 		}
 		
 		if (!fail) {
+			$('#createCampaign').removeAttr("disabled");
 			location.search = "teamA=" + aIDs.toString() + "&teamB=" + bIDs.toString() + "&dates=" + document.getElementById("startDate").value.replace(/-/g,"") + "0000-" + document.getElementById("endDate").value.replace(/-/g,"") + "2300";
 		}
 	}
@@ -214,9 +215,28 @@ function reqsuc() {
 	$("#load-text").text("Parsing kill data...");
 	
 	// Lets do something with the data
+	loop1:
 	for (var i = 0; i < data.length; i++) {
+		var victim = data[i].victim;
 		// Make sure the victim is in our list of wanted IDs (Checking all of them since we don't know which fetch call this came from)
-		if (Object.keys(allIDs).includes(data[i].victim.alliance_id + "") || Object.keys(allIDs).includes(data[i].victim.corporation_id + "") || Object.keys(allIDs).includes(data[i].victim.character_id + "")) {
+		if (Object.keys(allIDs).includes(victim.alliance_id + "") || Object.keys(allIDs).includes(victim.corporation_id + "") || Object.keys(allIDs).includes(victim.character_id + "")) {
+			
+			// We don't want awox kills to be counted they throw off the totals.
+			if (data[i].zkb.awox) {
+				console.log("Not keeping, awox");
+				continue;
+			}
+			// We also need to ignore "whored" kills
+			else {
+				loop2:
+				for (var j = 0; j < data[i].attackers.length; j++) {
+					if (data[i].attackers[j].corporation_id == victim.corporation_id || data[i].attackers[j].alliance_id == victim.alliance_id) {
+						console.log("Twas a whore");
+						continue loop1;
+					}
+				}
+			}
+			
 			// If either true, we want to keep this data
 			console.log("Keeping one");
 			
@@ -226,7 +246,7 @@ function reqsuc() {
 			
 				// STATS COLLECTION
 				// Used for the arrays. Defaulting to -1 for error catching. Should never see it, but juuuuuust in case.
-				var team = getTeam(data[i].victim);
+				var team = getTeam(victim);
 				if (team >= 0) {
 					// Track total kills
 					totalKills[team] += 1;
@@ -292,10 +312,12 @@ function loadSystemNames() {
 	var list = [];
 	
 	for (var i = 0; i < systems.length; i++) {
-		Object.keys(systems[i]).forEach(function(key) {
-			if (!list.includes(key))
-				list.push(key);
-		});
+		if (systems[i]) {
+			Object.keys(systems[i]).forEach(function(key) {
+				if (!list.includes(key))
+					list.push(key);
+			});
+		}
 	}
 	
 	var url = "https://esi.tech.ccp.is/latest/universe/names/?datasource=tranquility";
@@ -317,8 +339,10 @@ function parseSystems() {
 	} else {
 		data.forEach(function(key) {
 			for (var i = 0; i < systems.length; i++) {
-				if (Object.keys(systems[i]).includes(key.id+"")) {
-					systems[i][key.id+""].name = key.name;
+				if (systems[i]) {
+					if (Object.keys(systems[i]).includes(key.id+"")) {
+						systems[i][key.id+""].name = key.name;
+					}
 				}
 			}
 		});
@@ -362,12 +386,14 @@ function pullStats() {
 	var aTeamSystems = "";//Object.keys(systems[0]).toString().replace(",","\n");
 	var bTeamSystems = "";
 	for (var i = 0; i < systems.length; i++) {
-		Object.values(systems[i]).forEach(function(v) {
-			if (i == 0)
-				aTeamSystems += "<tr><td>" + v.name + "</td><td>" + v.kills + "</td></tr>";//v.name + (v.name.length >= 8 ? "\t" : v.name.length >= 4 ? "\t\t" : v.name.length < 4 ? "\t\t\t" : "") + v.kills + "\n";
-			else
-				bTeamSystems += "<tr><td>" + v.name + "</td><td>" + v.kills + "</td></tr>";//v.name + (v.name.length >= 8 ? "\t" : v.name.length >= 4 ? "\t\t" : v.name.length < 4 ? "\t\t\t" : "") + v.kills + "\n";
-		});
+		if (systems[i]) {
+			Object.values(systems[i]).forEach(function(v) {
+				if (i == 0)
+					aTeamSystems += "<tr><td>" + v.name + "</td><td>" + v.kills + "</td></tr>";//v.name + (v.name.length >= 8 ? "\t" : v.name.length >= 4 ? "\t\t" : v.name.length < 4 ? "\t\t\t" : "") + v.kills + "\n";
+				else
+					bTeamSystems += "<tr><td>" + v.name + "</td><td>" + v.kills + "</td></tr>";//v.name + (v.name.length >= 8 ? "\t" : v.name.length >= 4 ? "\t\t" : v.name.length < 4 ? "\t\t\t" : "") + v.kills + "\n";
+			});
+		}
 	}
 	$('#TeamA').find('#systems').append(aTeamSystems);
 	$('#TeamB').find('#systems').append(bTeamSystems);
