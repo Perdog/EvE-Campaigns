@@ -18,6 +18,7 @@ var totalKills = [0,0];
 var totalValues = [0,0];
 var systems = [];
 var mailIDs = [];
+var timer = 0;
 
 $(document).ready(function(){
 	/*
@@ -146,6 +147,8 @@ function nameError(error) {
 
 function getNames(list) {
 	$("#load-text").text("Attempting to load team names...");
+	
+	timer = Date.now();
 	
 	var url = "https://esi.tech.ccp.is/latest/universe/names/?datasource=tranquility";
 	var fetch = new XMLHttpRequest();
@@ -366,10 +369,13 @@ function pullStats() {
 	$("#load-text").text("Parsing all this info...");
 	console.log("Loading everything onto the page");
 	
+	// TODO At some point, add something to actually display kills
 	//for (var i = 0; i < allKills.length; i++) {}
 	
 	// Header things
+	var finalTime = Date.now() - timer;
 	$('#when').text("Campaign between the dates of " + (dates[0].slice(0,4)+"-"+dates[0].slice(4,6)+"-"+dates[0].slice(6,8)) + " and " + (dates[1].slice(0,4)+"-"+dates[1].slice(4,6)+"-"+dates[1].slice(6,8)));
+	$('#load-time').text("It took " + parseTimer(finalTime) + " to load this request.");
 	
 	// Set names. We loop through allIDs and compare it to the teamIDs, attaching them to the appropriate string.
 	var aTeamNames = "";
@@ -420,12 +426,6 @@ function dateChange(elem, target, attribute) {
 	console.log($(target)[0].checkValidity());
 }
 
-function testStuff() {
-	var start = $('#startDate');
-	
-	console.log(start[0].checkValidity());
-}
-
 function addField(elem) {
 	var item = elem.parentElement.lastElementChild;
 	var clone = item.cloneNode(true);
@@ -471,6 +471,18 @@ function sortTables() {
 			}
 		}
 	}
+}
+
+function parseTimer(duration) {
+	var milliseconds = parseInt((duration%1000)/100);
+	var seconds = parseInt((duration/1000)%60);
+	var minutes = parseInt((duration/(1000*60))%60);
+	var hours = parseInt((duration/(1000*60*60))%24);
+	hours = ((hours < 10) ? "0" + hours : hours) + "H";
+	minutes = ((minutes < 10) ? "0" + minutes : minutes) + "M";
+	seconds = ((seconds < 10) ? "0" + seconds : seconds);
+	
+	return hours + ":" + minutes + ":" + seconds + "." + milliseconds + "S";
 }
 
 function getTeam(victim) {
