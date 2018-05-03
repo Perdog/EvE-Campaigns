@@ -184,17 +184,19 @@ function getNextPage() {
 	console.log("Trying to fetch kills");
 	$("#load-text").text("Fetching some killmails...");
 	
-	var idLength = Object.keys(allIDs).length - totalFinished();
-	var howMany = (idLength > 0) ? Math.max(100/idLength, 1) : 0;
+	var idLength = Object.keys(allIDs).length;
+	var subt = idLength - totalFinished();
+	var howMany = (subt > 0) ? Math.round(Math.max(20/subt, 1)) : 0;
 	
 	if (howMany == 0) {
 		$("#load-text").text("All possible kills found...");
 		doneFetchingKills();
 	}
 	
-	console.log("Loading " + howMany + " pages in this loop, because " + totalFinished() + " are done");
+	console.log("Loading " + howMany + " pages in this loop, because " + totalFinished() + "/" + idLength + " are done");
 	for (var h = 0; h < howMany; h++) {
 		pageNumber++;
+		console.log("Fetching page " + pageNumber);
 		var base = "https://zkillboard.com/api/kills/";
 		var alli = "allianceID/";
 		var corp = "corporationID/";
@@ -214,7 +216,7 @@ function getNextPage() {
 			}
 			
 			if (!doneFetching[id].keepGoing) {
-				console.log("Not bothering to fetch kills for " + id);
+				//console.log("Not bothering to fetch kills for " + id);
 				continue;
 			}
 			
@@ -223,7 +225,6 @@ function getNextPage() {
 				doneFetching[id].checked = 0;
 			
 			var zurl = base + allIDs[id].type + "ID/" + id + sTime + dates[0] + eTime + dates[1] + page + pageNumber + dontForgetThis;
-			console.log(zurl);
 			var fetch = new XMLHttpRequest();
 			fetch.onload = reqsuc;
 			fetch.onerror = reqerror;
@@ -264,7 +265,7 @@ function reqsuc() {
 			
 			// We don't want awox kills to be counted they throw off the totals.
 			if (data[i].zkb.awox) {
-				console.log("Don't keep, awox");
+				//console.log("Don't keep, awox");
 				continue;
 			}
 			// We also need to ignore "whored" kills
@@ -282,14 +283,13 @@ function reqsuc() {
 					
 				}
 				if (hasWhore && whoreOnly) {
-					console.log("Just a whore, please ignore");
+					//console.log("Just a whore, please ignore");
 					continue;
 				}
 			}
 			
 			// If either true, we want to keep this data
-			console.log("Keeping one");
-			
+			//console.log("Keeping one");
 			if (!mailIDs.includes(data[i].killmail_id)) {
 				allKills.push(data[i]);
 				mailIDs.push(data[i].killmail_id);
