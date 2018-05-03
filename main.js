@@ -183,8 +183,16 @@ function parseTeamNames() {
 function getNextPage() {
 	console.log("Trying to fetch kills");
 	$("#load-text").text("Fetching some killmails...");
-	var idLength = Object.keys(allIDs).length;
-	var howMany = Math.max(20/idLength, 1);
+	
+	var idLength = Object.keys(allIDs).length - totalFinished();
+	var howMany = (idLength > 0) ? Math.max(100/idLength, 1) : 0;
+	
+	if (howMany == 0) {
+		$("#load-text").text("All possible kills found...");
+		doneFetchingKills();
+	}
+	
+	console.log("Loading " + howMany + " pages in this loop, because " + totalFinished() + " are done");
 	for (var h = 0; h < howMany; h++) {
 		pageNumber++;
 		var base = "https://zkillboard.com/api/kills/";
@@ -235,8 +243,7 @@ function reqsuc() {
 	// If the page contains data, we want to keep our requests going, if not, we want to add the ID from this fetch to the ignore list
 	if (data.length > 1 && !keepSearching)
 		keepSearching = true;
-	
-	if (data.length < 1) {
+	else if (data.length < 1) {
 		doneFetching[id].checked++;
 		
 		if (doneFetching[id].checked == doneFetching[id].max) {
@@ -427,15 +434,15 @@ function pullStats() {
 	$('#TeamB').find('#value').text(totalValues[1].toLocaleString(undefined, {maximumFractionDigits:2}));
 	
 	// Set system names
-	var aTeamSystems = "";//Object.keys(systems[0]).toString().replace(",","\n");
-	var bTeamSystems = "";
+	var aTeamSystems = "<tr><th style=\"text-align:center\">System name</th><th style=\"text-align:center\">Kills</th></tr>";
+	var bTeamSystems = aTeamSystems;
 	for (var i = 0; i < systems.length; i++) {
 		if (systems[i]) {
 			Object.values(systems[i]).forEach(function(v) {
 				if (i == 0)
-					aTeamSystems += "<tr><td>" + v.name + "</td><td>" + v.kills + "</td></tr>";//v.name + (v.name.length >= 8 ? "\t" : v.name.length >= 4 ? "\t\t" : v.name.length < 4 ? "\t\t\t" : "") + v.kills + "\n";
+					aTeamSystems += "<tr><td>" + v.name + "</td><td>" + v.kills.toLocaleString(undefined, {maximumFractionDigits:2}) + "</td></tr>";
 				else
-					bTeamSystems += "<tr><td>" + v.name + "</td><td>" + v.kills + "</td></tr>";//v.name + (v.name.length >= 8 ? "\t" : v.name.length >= 4 ? "\t\t" : v.name.length < 4 ? "\t\t\t" : "") + v.kills + "\n";
+					bTeamSystems += "<tr><td>" + v.name + "</td><td>" + v.kills.toLocaleString(undefined, {maximumFractionDigits:2}) + "</td></tr>";
 			});
 		}
 	}
@@ -484,6 +491,8 @@ function sortTables() {
 				one from current row and one from the next: */
 				x = rows[i].getElementsByTagName("TD")[1];
 				y = rows[i + 1].getElementsByTagName("TD")[1];
+				if (!x || !y)
+					continue;
 				/* Check if the two rows should switch place,
 				based on the direction, asc or desc: */
 				if (parseInt(x.innerHTML) < parseInt(y.innerHTML)) {
@@ -512,6 +521,18 @@ function parseTimer(duration) {
 	seconds = ((seconds < 10) ? "0" + seconds : seconds);
 	
 	return hours + ":" + minutes + ":" + seconds + "." + milliseconds + "S";
+}
+
+function totalFinished() {
+	var done = 0;
+	var keys = Object.keys(doneFetching);
+	for (var a = 0; a < keys.length; a++) {
+		if (doneFetching[keys[a]] && doneFetching[keys[a]].keepGoing == false) {
+			done++;
+		}
+	}
+	
+	return done;
 }
 
 function getTeam(victim) {
