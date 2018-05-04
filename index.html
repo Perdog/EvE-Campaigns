@@ -5,6 +5,13 @@
 	<link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.18.1/vis.min.css" rel="stylesheet" type="text/css" />
 	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4" crossorigin="anonymous">
 	<link rel="stylesheet" href="./bootstrap.css">
+	
+	<!-- Latest compiled and minified JQuery -->
+	<script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+	<!-- Latest compiled and minified Bootstrap -->
+	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js" integrity="sha384-uefMccjFJAIv6A+rW+L4AHf99KvxDjWSu1z9VI8SKNVmz4sk7buKt/6v9KI65qnm" crossorigin="anonymous"></script>
+	<script type="text/javascript" src="main.js"></script>
+	
 	<style>
 		.dynamic-content {
 			display: none;
@@ -15,11 +22,16 @@
 		}
 		
 		.sidebar {
-			flex: 12%
+			flex: 12%;
 		}
 		
 		.column {
 			flex: 32%;
+			text-align: center;
+		}
+		
+		.center-content {
+			flex: 76%;
 			text-align: center;
 		}
 		
@@ -62,12 +74,15 @@
 	<div id="loading-page" class="dynamic-content">
 		<p id="load-static">Loading... this could take a few minutes, please be patient</p>
 		<p id="load-text"></p>
-		<div class="loader"></div>
+		<progress id="load-progress" value="0" max="100"></progress>
+		<!--<div class="loader"></div>-->
 	</div>
 	<div id="campaign-page" class="dynamic-content">
 		<div id="statsHeader">
-			<h2 style="text-align:center">
-				Kill stats
+			<h2 style="text-align:center" class="jumbotron">
+				EvE Campaign
+				<br />
+				<small>Out-of-Game war reports. Battle report generator between teams across large periods of time.</small>
 				<br />
 			</h2>
 			
@@ -137,6 +152,21 @@
 				
 				<div class="sidebar" id="rightspacer"></div>
 			</div>
+			<div class="row">
+				<div class="sidebar"></div>
+				
+				<div class="center-content">
+					<div class="row">
+						<table style="width:100%">
+							<tbody id="systemKills" style="text-align:center">
+								
+							</tbody>
+						</table>
+					</div>
+				</div>
+				
+				<div class="sidebar"></div>
+			</div>
 		</div>
 	</div>
 	<div id="default-page" class="dynamic-content">
@@ -186,12 +216,6 @@
 		</form>
 	</div>
 	
-	<!-- Latest compiled and minified JQuery -->
-	<script type="text/javascript" src="https://code.jquery.com/jquery-3.2.0.min.js"></script>
-	<!-- Latest compiled and minified Bootstrap -->
-	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js" integrity="sha384-uefMccjFJAIv6A+rW+L4AHf99KvxDjWSu1z9VI8SKNVmz4sk7buKt/6v9KI65qnm" crossorigin="anonymous"></script>
-	<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
-	<script type="text/javascript" src="main.js"></script>
 </body>
 
 </html>
