@@ -18,6 +18,7 @@ var keepSearching = false;
 var totalKills = [0,0];
 var totalValues = [0,0];
 var systems = [];
+var systemKills = {};
 var mailIDs = [];
 var timer = 0;
 
@@ -185,8 +186,9 @@ function getNextPage() {
 	$("#load-text").text("Fetching some killmails...");
 	
 	var idLength = Object.keys(allIDs).length;
-	var subt = idLength - totalFinished();
+	var subt = idLength - (totalFinished()/2);
 	var howMany = (subt > 0) ? Math.round(Math.max(20/subt, 1)) : 0;
+	maxWait = 0;
 	
 	if (howMany == 0) {
 		$("#load-text").text("All possible kills found...");
@@ -221,6 +223,7 @@ function getNextPage() {
 			}
 			
 			waitingOn++;
+			maxWait++;
 			if (h === 0)
 				doneFetching[id].checked = 0;
 			
@@ -229,12 +232,16 @@ function getNextPage() {
 			fetch.onload = reqsuc;
 			fetch.onerror = reqerror;
 			fetch.open('get', zurl, true);
+			//fetch.setRequestHeader('Accept-Encoding','gzip');
 			//fetch.setRequestHeader('Requester-Info','EvE Campaigns --- Maintainer: Pedro Athonille @ jacob_perry@hotmail.ca');
 			fetch.send();
 		}
 	}
+	
+	$('#load-progress').attr("value", 0);
 }
 
+var maxWait = 0;
 function reqsuc() {
 	var data = JSON.parse(this.responseText);
 	var id = this.responseURL;
@@ -306,24 +313,39 @@ function reqsuc() {
 						// Topkeks that's gonna be fun
 					
 					// Track kills per system per team
+					// OLD system tracking
+					var sysID = data[i].solar_system_id;
 					if (!systems[team])
 						systems[team] = {};
-					if (!systems[team][data[i].solar_system_id]) {
-						systems[team][data[i].solar_system_id] = {};
-						systems[team][data[i].solar_system_id].kills = 0;
+					if (!systems[team][sysID]) {
+						systems[team][sysID] = {};
+						systems[team][sysID].kills = 0;
 					}
-					systems[team][data[i].solar_system_id].kills += 1;
+					systems[team][sysID].kills += 1;
+					
+					// REVAMPED system tracking
+					if (!systemKills.hasOwnProperty(sysID))
+						systemKills[sysID] = {};
+					if (team == 0)
+						(systemKills[sysID].hasOwnProperty("a")) ? systemKills[sysID].a++ : systemKills[sysID].a = 1;
+					if (team == 1)
+						(systemKills[sysID].hasOwnProperty("b")) ? systemKills[sysID].b++ : systemKills[sysID].b = 1;
 				}
 			}
 		}
 	}
+	
 	// If this is the last fetch, and there was no data on the page, build the webpage
 	waitingOn--;
+		
+	var tempInt = 100 - ((waitingOn/maxWait)*100);
+	$('#load-progress').attr("value", tempInt);
+	
 	if (waitingOn == 0)
 		if (keepSearching) {
 			keepSearching = false;
 			$("#load-text").text("Done parsing this page, next...");
-			getNextPage();
+			setTimeout(getNextPage,1000);
 		} else {
 			$("#load-text").text("All possible kills found...");
 			doneFetchingKills();
@@ -359,6 +381,16 @@ function loadSystemNames() {
 	
 	var list = [];
 	
+	/* REVAMPED system ID compiler
+	if (systemKills) {
+		Object.keys(systemKills).forEach(function(key) {
+			if (!list.includes(key))
+				list.push(key);
+		});
+	}
+	*/
+	
+	// OLD system ID compiler
 	for (var i = 0; i < systems.length; i++) {
 		if (systems[i]) {
 			Object.keys(systems[i]).forEach(function(key) {
@@ -386,11 +418,18 @@ function parseSystems() {
 		$("#load-text").text("Error loading system names...");
 	} else {
 		data.forEach(function(key) {
+			// OLD system name fetcher
 			for (var i = 0; i < systems.length; i++) {
 				if (systems[i]) {
 					if (Object.keys(systems[i]).includes(key.id+"")) {
 						systems[i][key.id+""].name = key.name;
 					}
+				}
+			}
+			// REVAMPED system name fetcher
+			if (systemKills) {
+				if (Object.keys(systemKills).includes(key.id+"")) {
+					systemKills[key.id+""].name = key.name;
 				}
 			}
 		});
@@ -446,9 +485,18 @@ function pullStats() {
 			});
 		}
 	}
-	$('#TeamA').find('#systems').append(aTeamSystems);
-	$('#TeamB').find('#systems').append(bTeamSystems);
+	//$('#TeamA').find('#systems').append(aTeamSystems);
+	//$('#TeamB').find('#systems').append(bTeamSystems);
+	
+	// Revamp system stuff
+	var systemKillTable = "<tr><th style=\"text-align:center\">Team A Kills</th><th style=\"text-align:center\">System name</th><th style=\"text-align:center\">Team B Kills</th></tr>";
+	Object.values(systemKills).forEach(function(v) {
+		systemKillTable += "<tr><td>" + ((v.a) ? v.a : "---") + "</td><td>" + v.name + "</td><td>" + ((v.b) ? v.b : "---") + "</td></tr>";
+	});
+	$('#systemKills').append(systemKillTable);
+	
 	sortTables();
+	sortTable2();
 	console.log("Done");
 	setTimeout(function() {
 		$("#load-text").text("Ready to go");
@@ -495,7 +543,7 @@ function sortTables() {
 					continue;
 				/* Check if the two rows should switch place,
 				based on the direction, asc or desc: */
-				if (parseInt(x.innerHTML) < parseInt(y.innerHTML)) {
+				if (parseInt(x.innerHTML.replace(/,/g, "")) < parseInt(y.innerHTML.replace(/,/g, ""))) {
 					// If so, mark as a switch and break the loop:
 					shouldSwitch= true;
 					break;
@@ -507,6 +555,53 @@ function sortTables() {
 				rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
 				switching = true;
 			}
+		}
+	}
+}
+
+function sortTable2() {
+	var table, rows, switching, i, x1, x2, y1, y2, shouldSwitch;
+	
+	table = document.getElementById("systemKills");
+	switching = true;
+	/* Make a loop that will continue until
+	no switching has been done: */
+	while (switching) {
+		// Start by saying: no switching is done:
+		switching = false;
+		rows = table.getElementsByTagName("TR");
+		// Loop through all table rows:
+		for (i = 0; i < (rows.length - 1); i++) {
+			// Start by saying there should be no switching:
+			shouldSwitch = false;
+			/* Get the two elements you want to compare,
+			one from current row and one from the next: */
+			x1 = rows[i].getElementsByTagName("TD")[0];
+			x2 = rows[i].getElementsByTagName("TD")[2];
+			y1 = rows[i + 1].getElementsByTagName("TD")[0];
+			y2 = rows[i + 1].getElementsByTagName("TD")[2];
+			
+			if (!x1 || !x2 || !y1 || !y2)
+				continue;
+			
+			x1 = x1.innerHTML.replace("---", "0");
+			x2 = x2.innerHTML.replace("---", "0");
+			y1 = y1.innerHTML.replace("---", "0");
+			y2 = y2.innerHTML.replace("---", "0");
+			
+			/* Check if the two rows should switch place,
+			based on the direction, asc or desc: */
+			if ((parseInt(x1.replace(/,/g, "")) + parseInt(x2.replace(/,/g, ""))) < (parseInt(y1.replace(/,/g, "")) + parseInt(y2.replace(/,/g, "")))) {
+				// If so, mark as a switch and break the loop:
+				shouldSwitch= true;
+				break;
+			}
+		}
+		if (shouldSwitch) {
+			/* If a switch has been marked, make the switch
+			and mark that a switch has been done: */
+			rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+			switching = true;
 		}
 	}
 }
