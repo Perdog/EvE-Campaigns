@@ -192,6 +192,7 @@ function getNextPage() {
 	var howMany = ((idLength - totalFinished()) > 0) ? Math.round(Math.max(20/subt, 1)) : 0;
 	maxWait = 0;
 	
+	// If all IDs have "keepGoing" set false, no more calls
 	if (howMany == 0) {
 		$("#load-text").text("All possible kills found...");
 		doneFetchingKills();
@@ -215,9 +216,7 @@ function getNextPage() {
 		
 			if (!doneFetching.hasOwnProperty(id)) {
 				doneFetching[id] = {};
-				doneFetching[id].checked = 0;
 				doneFetching[id].keepGoing = true;
-				doneFetching[id].max = howMany;
 			}
 			
 			if (!doneFetching[id].keepGoing) {
@@ -227,8 +226,6 @@ function getNextPage() {
 			
 			waitingOn++;
 			maxWait++;
-			if (h === 0)
-				doneFetching[id].checked = 0;
 			
 			var zurl = base + allIDs[id].type + "ID/" + id + sTime + dates[0] + eTime + dates[1] + page + pageNumber + dontForgetThis;
 			//	console.log(zurl);
@@ -252,10 +249,11 @@ function reqsuc() {
 	id = id.substring(id.indexOf("ID/")+3);
 	id = id.substring(0, id.indexOf("/"));
 	
-	// If the page contains data, we want to keep our requests going, if not, we want to add the ID from this fetch to the ignore list
+	// If the page contains data, we want to keep our requests going
 	if (data.length > 1 && !keepSearching) {
 		keepSearching = true;
 	}
+	// However we also need to check for empty returns and track the id that returned it. Otherwise we'll waste an entire loop grabbing nothing but empty pages.
 	else if (data.length < 1) {
 		doneFetching[id].keepGoing = false;
 	}
@@ -271,13 +269,12 @@ function reqsuc() {
 		// Make sure the victim is in our list of wanted IDs (Checking all of them since we don't know which fetch call this came from)
 		if (Object.keys(allIDs).includes(victim.alliance_id + "") || Object.keys(allIDs).includes(victim.corporation_id + "") || Object.keys(allIDs).includes(victim.character_id + "")) {
 			
-			// We don't want awox kills to be counted they throw off the totals.
+			// We don't want awox kills to be counted, they throw off the totals.
 			if (data[i].zkb.awox) {
 				//console.log("Don't keep, awox");
 				continue;
 			}
-			// We also need to ignore "whored" kills
-			// TODO ... BALLS. The logic here needs to be changed. Just because someone whored doesn't mean the kill *needs* to be ignored, only needs to be ignored it that's the *only* reason a kill is showing up
+			// We also need to ignore "whored" kills.
 			else {
 				var hasWhore = false;
 				var whoreOnly = true;
@@ -288,7 +285,6 @@ function reqsuc() {
 					} else if (Object.keys(useIDs).includes(data[i].attackers[j].corporation_id) || Object.keys(useIDs).includes(data[i].attackers[j].alliance_id) || Object.keys(useIDs).includes(data[i].attackers[j].character_id)) {
 						whoreOnly = false;
 					}
-					
 				}
 				if (hasWhore && whoreOnly) {
 					//console.log("Just a whore, please ignore");
@@ -296,7 +292,7 @@ function reqsuc() {
 				}
 			}
 			
-			// If either true, we want to keep this data
+			// If this killmail passes the above checks, we want to keep it. First check to make sure we don't have this kill already.
 			//console.log("Keeping one");
 			if (!mailIDs.includes(data[i].killmail_id)) {
 				allKills.push(data[i]);
