@@ -55,11 +55,13 @@ $(document).ready(function(){
 		$('#default-page').show();
 		var date = new Date();
 		$('#endDate').attr("max", date.getFullYear() + "-" + (date.getMonth() < 9 ? "0" : "") + (date.getMonth() + 1) + "-" + (date.getDate() < 10 ? "0" : "") + date.getDate());
+		$('#endDate').attr("value", date.getFullYear() + "-" + (date.getMonth() < 9 ? "0" : "") + (date.getMonth() + 1) + "-" + (date.getDate() < 10 ? "0" : "") + date.getDate());
 	}
 });
 
 $('#campaign-form').submit(function(e) {
 	e.preventDefault();
+	
 	$('#createCampaign').attr("disabled", "disabled");
 	
 	resetAllTheThings();
@@ -187,12 +189,13 @@ function getNextPage() {
 	
 	var idLength = Object.keys(allIDs).length;
 	var subt = idLength - (totalFinished()/2);
-	var howMany = (subt > 0) ? Math.round(Math.max(20/subt, 1)) : 0;
+	var howMany = ((idLength - totalFinished()) > 0) ? Math.round(Math.max(20/subt, 1)) : 0;
 	maxWait = 0;
 	
 	if (howMany == 0) {
 		$("#load-text").text("All possible kills found...");
 		doneFetchingKills();
+		return;
 	}
 	
 	console.log("Loading " + howMany + " pages in this loop, because " + totalFinished() + "/" + idLength + " are done");
@@ -228,6 +231,7 @@ function getNextPage() {
 				doneFetching[id].checked = 0;
 			
 			var zurl = base + allIDs[id].type + "ID/" + id + sTime + dates[0] + eTime + dates[1] + page + pageNumber + dontForgetThis;
+			//	console.log(zurl);
 			var fetch = new XMLHttpRequest();
 			fetch.onload = reqsuc;
 			fetch.onerror = reqerror;
@@ -249,14 +253,11 @@ function reqsuc() {
 	id = id.substring(0, id.indexOf("/"));
 	
 	// If the page contains data, we want to keep our requests going, if not, we want to add the ID from this fetch to the ignore list
-	if (data.length > 1 && !keepSearching)
+	if (data.length > 1 && !keepSearching) {
 		keepSearching = true;
+	}
 	else if (data.length < 1) {
-		doneFetching[id].checked++;
-		
-		if (doneFetching[id].checked == doneFetching[id].max) {
-			doneFetching[id].keepGoing = false;
-		}
+		doneFetching[id].keepGoing = false;
 	}
 	
 	$("#load-text").text("Parsing kill data...");
@@ -341,7 +342,7 @@ function reqsuc() {
 	var tempInt = 100 - ((waitingOn/maxWait)*100);
 	$('#load-progress').attr("value", tempInt);
 	
-	if (waitingOn == 0)
+	if (waitingOn == 0) {
 		if (keepSearching) {
 			keepSearching = false;
 			$("#load-text").text("Done parsing this page, next...");
@@ -350,6 +351,7 @@ function reqsuc() {
 			$("#load-text").text("All possible kills found...");
 			doneFetchingKills();
 		}
+	}
 }
 
 function reqerror(error) {
@@ -507,7 +509,6 @@ function pullStats() {
 
 function dateChange(elem, target, attribute) {
 	$(target).attr(attribute, elem.value);
-	console.log($(target)[0].checkValidity());
 }
 
 function addField(elem) {
