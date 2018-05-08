@@ -608,11 +608,11 @@ function parseTimer(duration) {
 	var seconds = parseInt((duration/1000)%60);
 	var minutes = parseInt((duration/(1000*60))%60);
 	var hours = parseInt((duration/(1000*60*60))%24);
-	hours = ((hours < 10) ? "0" + hours : hours) + "H";
-	minutes = ((minutes < 10) ? "0" + minutes : minutes) + "M";
+	hours = (hours > 0) ? ((hours < 10) ? "0" + hours : hours) + "H" : "";
+	minutes = (minutes > 0) ? ((minutes < 10) ? "0" + minutes : minutes) + "M" : "";
 	seconds = ((seconds < 10) ? "0" + seconds : seconds);
 	
-	return hours + ":" + minutes + ":" + seconds + "." + milliseconds + "S";
+	return ((hours != "") ? hours + ":" : "") + ((minutes != "") ? minutes + ":" : "" ) + seconds + "." + milliseconds + "S";
 }
 
 function totalFinished() {
