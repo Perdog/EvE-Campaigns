@@ -9,10 +9,7 @@ var dates = [];
 
 // Kills stuff
 var allKills = [];
-var doneFetching = {};
-var waitingOn = 0;
-var pageNumber = 0;
-var keepSearching = false;
+var fetching = {};
 
 // Stats stuff
 var totalKills = [0,0];
@@ -23,14 +20,6 @@ var mailIDs = [];
 var timer = 0;
 
 $(document).ready(function(){
-	/*
-	Check for url search
-	If does not exist, load index page
-	If it does, load view page
-	Check for cache, if exists, load it.
-	If load page has never been cached, begin fetching and parsing, show loading page because this could take a while. Once it's done, create a cache.
-	*/
-	
 	// Check if we're trying to load some data or not.
 	if (location.search) {
 		console.log("Bueno: " + location.search);
@@ -177,88 +166,60 @@ function parseTeamNames() {
 			temp.name = data[i].name;
 			temp.type = data[i].category;
 			allIDs[data[i].id] = temp;
+			fetching[data[i].id] = {};
+			fetching[data[i].id].page = 1;
+			fetching[data[i].id].waiting = 0;
+			fetching[data[i].id].keepGoing = true;
+			for (var j = 0; j < 10; j++) {
+				fetchKillMails(data[i].id);
+			}
 		}
-		
-		getNextPage();
 	}
 }
 
-function getNextPage() {
-	console.log("Trying to fetch kills");
-	$("#load-text").text("Fetching some killmails...");
+function fetchKillMails(id) {
+	var pn = fetching[id].page;
+	fetching[id].page++;
+	console.log("Trying to fetch kills. Page " + pn + " for " + id);
 	
-	var idLength = Object.keys(allIDs).length;
-	var subt = idLength - (totalFinished()/2);
-	var howMany = ((idLength - totalFinished()) > 0) ? Math.round(Math.max(20/subt, 1)) : 0;
-	maxWait = 0;
+	var base = "https://zkillboard.com/api/kills/";
+	var alli = "allianceID/";
+	var corp = "corporationID/";
+	var sTime = "/startTime/";
+	var eTime = "/endTime/";
+	var page = "/no-items/page/";
+	var dontForgetThis = "/";
 	
-	// If all IDs have "keepGoing" set false, no more calls
-	if (howMany == 0) {
-		$("#load-text").text("All possible kills found...");
-		doneFetchingKills();
+	if (!fetching[id].keepGoing) {
 		return;
 	}
 	
-	console.log("Loading " + howMany + " pages in this loop, because " + totalFinished() + "/" + idLength + " are done");
-	for (var h = 0; h < howMany; h++) {
-		pageNumber++;
-		console.log("Fetching page " + pageNumber);
-		var base = "https://zkillboard.com/api/kills/";
-		var alli = "allianceID/";
-		var corp = "corporationID/";
-		var sTime = "/startTime/";
-		var eTime = "/endTime/";
-		var page = "/no-items/page/";
-		var dontForgetThis = "/";
-		
-		for (var i = 0; i < idLength; i++) {
-			var id = Object.keys(allIDs)[i];
-		
-			if (!doneFetching.hasOwnProperty(id)) {
-				doneFetching[id] = {};
-				doneFetching[id].keepGoing = true;
-			}
-			
-			if (!doneFetching[id].keepGoing) {
-				//console.log("Not bothering to fetch kills for " + id);
-				continue;
-			}
-			
-			waitingOn++;
-			maxWait++;
-			
-			var zurl = base + allIDs[id].type + "ID/" + id + sTime + dates[0] + eTime + dates[1] + page + pageNumber + dontForgetThis;
-			//	console.log(zurl);
-			var fetch = new XMLHttpRequest();
-			fetch.onload = reqsuc;
-			fetch.onerror = reqerror;
-			fetch.open('get', zurl, true);
-			//fetch.setRequestHeader('Accept-Encoding','gzip');
-			//fetch.setRequestHeader('Requester-Info','EvE Campaigns --- Maintainer: Pedro Athonille @ jacob_perry@hotmail.ca');
-			fetch.send();
-		}
-	}
+	fetching[id].waiting++;
+	maxWait++;
 	
-	$('#load-progress').attr("value", 0);
+	var zurl = base + allIDs[id].type + "ID/" + id + sTime + dates[0] + eTime + dates[1] + page + pn + dontForgetThis;
+	var fetch = new XMLHttpRequest();
+	fetch.onload = reqsuc;
+	fetch.onerror = reqerror;
+	fetch.open('get', zurl, true);
+	//fetch.setRequestHeader('Accept-Encoding','gzip');
+	//fetch.setRequestHeader('Requester-Info','EvE Campaigns --- Maintainer: Pedro Athonille @ jacob_perry@hotmail.ca');
+	fetch.send();
 }
 
 var maxWait = 0;
 function reqsuc() {
 	var data = JSON.parse(this.responseText);
 	var id = this.responseURL;
+	var page = id.substring(id.indexOf("page/")+5);
+	page = parseInt(page.substring(0, page.indexOf("/")));
 	id = id.substring(id.indexOf("ID/")+3);
 	id = id.substring(0, id.indexOf("/"));
 	
-	// If the page contains data, we want to keep our requests going
-	if (data.length > 1 && !keepSearching) {
-		keepSearching = true;
+	// If the page contains data, we want to keep our requests going, otherwise stop them
+	if (data.length < 1) {
+		fetching[id].keepGoing = false;
 	}
-	// However we also need to check for empty returns and track the id that returned it. Otherwise we'll waste an entire loop grabbing nothing but empty pages.
-	else if (data.length < 1) {
-		doneFetching[id].keepGoing = false;
-	}
-	
-	$("#load-text").text("Parsing kill data...");
 	
 	// Lets do something with the data
 	for (var i = 0; i < data.length; i++) {
@@ -271,7 +232,6 @@ function reqsuc() {
 			
 			// We don't want awox kills to be counted, they throw off the totals.
 			if (data[i].zkb.awox) {
-				//console.log("Don't keep, awox");
 				continue;
 			}
 			// We also need to ignore "whored" kills.
@@ -287,13 +247,11 @@ function reqsuc() {
 					}
 				}
 				if (hasWhore && whoreOnly) {
-					//console.log("Just a whore, please ignore");
 					continue;
 				}
 			}
 			
 			// If this killmail passes the above checks, we want to keep it. First check to make sure we don't have this kill already.
-			//console.log("Keeping one");
 			if (!mailIDs.includes(data[i].killmail_id)) {
 				allKills.push(data[i]);
 				mailIDs.push(data[i].killmail_id);
@@ -310,17 +268,8 @@ function reqsuc() {
 						// Topkeks that's gonna be fun
 					
 					// Track kills per system per team
-					// OLD system tracking
 					var sysID = data[i].solar_system_id;
-					if (!systems[team])
-						systems[team] = {};
-					if (!systems[team][sysID]) {
-						systems[team][sysID] = {};
-						systems[team][sysID].kills = 0;
-					}
-					systems[team][sysID].kills += 1;
 					
-					// REVAMPED system tracking
 					if (!systemKills.hasOwnProperty(sysID))
 						systemKills[sysID] = {};
 					if (team == 0)
@@ -333,20 +282,20 @@ function reqsuc() {
 	}
 	
 	// If this is the last fetch, and there was no data on the page, build the webpage
-	waitingOn--;
+	fetching[id].waiting--;
 		
-	var tempInt = 100 - ((waitingOn/maxWait)*100);
+	var tempInt = 100 - ((fetching[id].waiting/maxWait)*100);
 	$('#load-progress').attr("value", tempInt);
 	
-	if (waitingOn == 0) {
-		if (keepSearching) {
-			keepSearching = false;
-			$("#load-text").text("Done parsing this page, next...");
-			setTimeout(getNextPage,1000);
-		} else {
-			$("#load-text").text("All possible kills found...");
-			doneFetchingKills();
-		}
+	
+	var idLength = Object.keys(allIDs).length;
+	
+	if (totalFinished() == idLength && fetching[id].waiting == 0) {
+		$("#load-text").text("All possible kills found...");
+		doneFetchingKills();
+		return;
+	} else if (fetching[id].keepGoing) {
+		fetchKillMails(id);
 	}
 }
 
@@ -379,23 +328,11 @@ function loadSystemNames() {
 	
 	var list = [];
 	
-	/* REVAMPED system ID compiler
 	if (systemKills) {
 		Object.keys(systemKills).forEach(function(key) {
 			if (!list.includes(key))
 				list.push(key);
 		});
-	}
-	*/
-	
-	// OLD system ID compiler
-	for (var i = 0; i < systems.length; i++) {
-		if (systems[i]) {
-			Object.keys(systems[i]).forEach(function(key) {
-				if (!list.includes(key))
-					list.push(key);
-			});
-		}
 	}
 	
 	var url = "https://esi.tech.ccp.is/latest/universe/names/?datasource=tranquility";
@@ -416,15 +353,6 @@ function parseSystems() {
 		$("#load-text").text("Error loading system names...");
 	} else {
 		data.forEach(function(key) {
-			// OLD system name fetcher
-			for (var i = 0; i < systems.length; i++) {
-				if (systems[i]) {
-					if (Object.keys(systems[i]).includes(key.id+"")) {
-						systems[i][key.id+""].name = key.name;
-					}
-				}
-			}
-			// REVAMPED system name fetcher
 			if (systemKills) {
 				if (Object.keys(systemKills).includes(key.id+"")) {
 					systemKills[key.id+""].name = key.name;
@@ -483,18 +411,14 @@ function pullStats() {
 			});
 		}
 	}
-	//$('#TeamA').find('#systems').append(aTeamSystems);
-	//$('#TeamB').find('#systems').append(bTeamSystems);
 	
-	// Revamp system stuff
 	var systemKillTable = "<tr><th style=\"text-align:center\">Team A Kills</th><th style=\"text-align:center\">System name</th><th style=\"text-align:center\">Team B Kills</th></tr>";
 	Object.values(systemKills).forEach(function(v) {
 		systemKillTable += "<tr><td>" + ((v.a) ? v.a : "---") + "</td><td>" + v.name + "</td><td>" + ((v.b) ? v.b : "---") + "</td></tr>";
 	});
 	$('#systemKills').append(systemKillTable);
 	
-	sortTables();
-	sortTable2();
+	sortTable();
 	console.log("Done");
 	setTimeout(function() {
 		$("#load-text").text("Ready to go");
@@ -516,47 +440,7 @@ function addField(elem) {
 	elem.parentNode.appendChild(clone);
 }
 
-function sortTables() {
-	var table, rows, switching, i, x, y, shouldSwitch;
-	
-	for (var h = 0; h < systems.length; h++) {
-		table = (h == 0 ? document.getElementById("TeamA") : document.getElementById("TeamB"));
-		switching = true;
-		/* Make a loop that will continue until
-		no switching has been done: */
-		while (switching) {
-			// Start by saying: no switching is done:
-			switching = false;
-			rows = table.getElementsByTagName("TR");
-			// Loop through all table rows:
-			for (i = 0; i < (rows.length - 1); i++) {
-				// Start by saying there should be no switching:
-				shouldSwitch = false;
-				/* Get the two elements you want to compare,
-				one from current row and one from the next: */
-				x = rows[i].getElementsByTagName("TD")[1];
-				y = rows[i + 1].getElementsByTagName("TD")[1];
-				if (!x || !y)
-					continue;
-				/* Check if the two rows should switch place,
-				based on the direction, asc or desc: */
-				if (parseInt(x.innerHTML.replace(/,/g, "")) < parseInt(y.innerHTML.replace(/,/g, ""))) {
-					// If so, mark as a switch and break the loop:
-					shouldSwitch= true;
-					break;
-				}
-			}
-			if (shouldSwitch) {
-				/* If a switch has been marked, make the switch
-				and mark that a switch has been done: */
-				rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-				switching = true;
-			}
-		}
-	}
-}
-
-function sortTable2() {
+function sortTable() {
 	var table, rows, switching, i, x1, x2, y1, y2, shouldSwitch;
 	
 	table = document.getElementById("systemKills");
@@ -617,9 +501,10 @@ function parseTimer(duration) {
 
 function totalFinished() {
 	var done = 0;
-	var keys = Object.keys(doneFetching);
+	var keys = Object.keys(fetching);
+	
 	for (var a = 0; a < keys.length; a++) {
-		if (doneFetching[keys[a]] && doneFetching[keys[a]].keepGoing == false) {
+		if (fetching[keys[a]] && fetching[keys[a]].keepGoing == false) {
 			done++;
 		}
 	}
