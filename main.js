@@ -1,3 +1,8 @@
+// Static stuff
+var db = firebase.firestore();
+var systemDB = db.collection("systems");
+var killsDB = db.collection("killmails");
+
 // Default page stuff
 var namesList = [];
 
@@ -23,6 +28,11 @@ $(document).ready(function(){
 	// Check if we're trying to load some data or not.
 	if (location.search) {
 		console.log("Bueno: " + location.search);
+		
+		if (location.search == "?test") {
+			getKillsFromDB();
+			return;
+		}
 		
 		// If yes, parse the search
 		var teamA = parseSearch("teamA");
@@ -177,14 +187,42 @@ function parseTeamNames() {
 	}
 }
 
+var waitingOnKills = 0;
+function getKillsFromDB() {
+	dates[0] = "201701010000";
+	dates[1] = "201712012300";
+	var startStamp = new Date(dates[0].substring(0, 4), Number(dates[0].substring(4,6))-1, dates[0].substring(6,8));
+	console.log(startStamp.toISOString());
+	var endStamp = new Date(dates[1].substring(0, 4), Number(dates[1].substring(4,6))-1, dates[1].substring(6,8));
+	console.log(endStamp.toISOString());
+	
+	//*
+	killsDB.where("killmail_time", ">=", startStamp.toISOString())
+			.where("killmail_time", "<=", endStamp.toISOString())
+			.where("victim." +/* allIDs[id].type + */"alliance_id", "==", 99007289)
+			.orderBy("killmail_time")
+			.get()
+			.then(function(snap){
+				if (!snap.empty) {
+					console.log(snap);
+					snap.forEach(function(doc) {
+						console.log(doc.data());
+						//parseKillmail(doc.data(), true);
+					});
+				}
+			})
+			.catch(function(err){
+				console.error("Error fetching killmail: ", err);
+			});
+	//*/
+}
+
 function fetchKillMails(id) {
 	var pn = fetching[id].page;
 	fetching[id].page++;
 	console.log("Trying to fetch kills. Page " + pn + " for " + id);
 	
 	var base = "https://zkillboard.com/api/kills/";
-	var alli = "allianceID/";
-	var corp = "corporationID/";
 	var sTime = "/startTime/";
 	var eTime = "/endTime/";
 	var page = "/no-items/page/";
@@ -223,79 +261,93 @@ function reqsuc() {
 	
 	// Lets do something with the data
 	for (var i = 0; i < data.length; i++) {
-		var victim = data[i].victim;
-		// Used for the arrays. Defaulting to -1 for error catching. Should never see it, but juuuuuust in case.
-		var team = getTeam(victim);
-		
-		// Make sure the victim is in our list of wanted IDs (Checking all of them since we don't know which fetch call this came from)
-		if (Object.keys(allIDs).includes(victim.alliance_id + "") || Object.keys(allIDs).includes(victim.corporation_id + "") || Object.keys(allIDs).includes(victim.character_id + "")) {
-			
-			// We don't want awox kills to be counted, they throw off the totals.
-			if (data[i].zkb.awox) {
-				continue;
-			}
-			// We also need to ignore "whored" kills.
-			else {
-				var hasWhore = false;
-				var whoreOnly = true;
-				var useIDs = (team == 0 ? aIDs : bIDs);
-				for (var j = 0; j < data[i].attackers.length; j++) {
-					if (data[i].attackers[j].corporation_id == victim.corporation_id || data[i].attackers[j].alliance_id == victim.alliance_id) {
-						hasWhore = true;
-					} else if (Object.keys(useIDs).includes(data[i].attackers[j].corporation_id) || Object.keys(useIDs).includes(data[i].attackers[j].alliance_id) || Object.keys(useIDs).includes(data[i].attackers[j].character_id)) {
-						whoreOnly = false;
-					}
-				}
-				if (hasWhore && whoreOnly) {
-					continue;
-				}
-			}
-			
-			// If this killmail passes the above checks, we want to keep it. First check to make sure we don't have this kill already.
-			if (!mailIDs.includes(data[i].killmail_id)) {
-				allKills.push(data[i]);
-				mailIDs.push(data[i].killmail_id);
-			
-				// STATS COLLECTION
-				if (team >= 0) {
-					// Track total kills
-					totalKills[team] += 1;
-					
-					// Track total kill values
-					totalValues[team] += data[i].zkb.totalValue;
-					
-					// Track kills per ship per team
-						// Topkeks that's gonna be fun
-					
-					// Track kills per system per team
-					var sysID = data[i].solar_system_id;
-					
-					if (!systemKills.hasOwnProperty(sysID))
-						systemKills[sysID] = {};
-					if (team == 0)
-						(systemKills[sysID].hasOwnProperty("a")) ? systemKills[sysID].a++ : systemKills[sysID].a = 1;
-					if (team == 1)
-						(systemKills[sysID].hasOwnProperty("b")) ? systemKills[sysID].b++ : systemKills[sysID].b = 1;
-				}
-			}
-		}
+		parseKillmail(data[i], false);
 	}
 	
 	// If this is the last fetch, and there was no data on the page, build the webpage
 	fetching[id].waiting--;
-		
+	/*
 	var tempInt = 100 - ((fetching[id].waiting/maxWait)*100);
 	$('#load-progress').attr("value", tempInt);
-	
-	
+	*/
 	var idLength = Object.keys(allIDs).length;
-	
 	if (totalFinished() == idLength && fetching[id].waiting == 0) {
+		console.log("Final being called from: " + fetching[id] + ":" + fetching[id].page + ":" + fetching[id].waiting + ":" + fetching[id].keepGoing);
 		$("#load-text").text("All possible kills found...");
 		doneFetchingKills();
 		return;
 	} else if (fetching[id].keepGoing) {
 		fetchKillMails(id);
+	}
+}
+
+function parseKillmail(data, fromDB) {
+	// Add the kill to our DB for later use
+	/*if (!fromDB) {
+		killsDB.add(data)
+				.then(function(ref){
+					console.log("Kill injected");
+				})
+				.catch(function(error){
+					console.error("Error adding kill to DB: ", error)
+				});
+	}*/
+	
+	var victim = data.victim;
+	// Used for the arrays. Defaulting to -1 for error catching. Should never see it, but juuuuuust in case.
+	var team = getTeam(victim);
+	
+	// Make sure the victim is in our list of wanted IDs (Checking all of them since we don't know which fetch call this came from)
+	if (Object.keys(allIDs).includes(victim.alliance_id + "") || Object.keys(allIDs).includes(victim.corporation_id + "") || Object.keys(allIDs).includes(victim.character_id + "")) {
+		
+		// We don't want awox kills to be counted, they throw off the totals.
+		if (data.zkb.awox) {
+			return;
+		}
+		// We also need to ignore "whored" kills.
+		else {
+			var hasWhore = false;
+			var whoreOnly = true;
+			var useIDs = (team == 0 ? aIDs : bIDs);
+			for (var j = 0; j < data.attackers.length; j++) {
+				if (data.attackers[j].corporation_id == victim.corporation_id || data.attackers[j].alliance_id == victim.alliance_id) {
+					hasWhore = true;
+				} else if (Object.keys(useIDs).includes(data.attackers[j].corporation_id) || Object.keys(useIDs).includes(data.attackers[j].alliance_id) || Object.keys(useIDs).includes(data.attackers[j].character_id)) {
+					whoreOnly = false;
+				}
+			}
+			if (hasWhore && whoreOnly) {
+				return;
+			}
+		}
+		
+		// If this killmail passes the above checks, we want to keep it. First check to make sure we don't have this kill already.
+		if (!mailIDs.includes(data.killmail_id)) {
+			allKills.push(data);
+			mailIDs.push(data.killmail_id);
+		
+			// STATS COLLECTION
+			if (team >= 0) {
+				// Track total kills
+				totalKills[team] += 1;
+				
+				// Track total kill values
+				totalValues[team] += data.zkb.totalValue;
+				
+				// Track kills per ship per team
+					// Topkeks that's gonna be fun
+				
+				// Track kills per system per team
+				var sysID = data.solar_system_id;
+				
+				if (!systemKills.hasOwnProperty(sysID))
+					systemKills[sysID] = {};
+				if (team == 0)
+					(systemKills[sysID].hasOwnProperty("a")) ? systemKills[sysID].a++ : systemKills[sysID].a = 1;
+				if (team == 1)
+					(systemKills[sysID].hasOwnProperty("b")) ? systemKills[sysID].b++ : systemKills[sysID].b = 1;
+			}
+		}
 	}
 }
 
@@ -322,27 +374,64 @@ function doneFetchingKills() {
 	}
 }
 
+var waitingOnSystems = 0;
+var systemFetchList = [];
 function loadSystemNames() {
 	console.log("Fetching system names");
 	$("#load-text").text("Loading system names...");
 	
-	var list = [];
+	systemFetchList = [];
 	
 	if (systemKills) {
 		Object.keys(systemKills).forEach(function(key) {
-			if (!list.includes(key))
-				list.push(key);
+			key = Number(key);
+			// Increment our wait variable. If JS won't give me a proper wait function, I'll make it myself
+			waitingOnSystems++;
+			systemDB.where('id', '==', key)
+					.get()
+					.then(function(snap) {
+						if (!snap.empty) {
+							snap.forEach(function(doc) {
+								console.log("Successfully found " + key);
+								systemKills[doc.data().id].name = doc.data().name;
+							});
+						} else {
+							console.log("Failed to find " + key + ", search ESI for it");
+							if (!systemFetchList.includes(key))
+								systemFetchList.push(key);
+						}
+						waitingOnSystems--;
+					})
+					.catch(function(error) {
+						console.error("Error in system id fetch: ", error);
+					});
 		});
 	}
-	
-	var url = "https://esi.tech.ccp.is/latest/universe/names/?datasource=tranquility";
-	var fetch = new XMLHttpRequest();
-	fetch.onload = parseSystems;
-	fetch.onerror = reqerror;
-	fetch.open('post', url, true);
-	fetch.setRequestHeader('Content-Type','application/json');
-	fetch.setRequestHeader('accept','application/json');
-	fetch.send(JSON.stringify(list));
+	setTimeout(fetchSystemNames, 100);
+}
+
+function fetchSystemNames() {
+	// Make sure all DB calls are complete before trying to fetch data from ESI
+	if (waitingOnSystems > 0) {
+		setTimeout(fetchSystemNames, 100);
+		console.log("Waiting");
+		return;
+	} else if (systemFetchList.length > 0) {
+		console.log("Ready");
+		console.log("System list: ", systemFetchList);
+		var url = "https://esi.tech.ccp.is/latest/universe/names/?datasource=tranquility";
+		var fetch = new XMLHttpRequest();
+		fetch.onload = parseSystems;
+		fetch.onerror = reqerror;
+		fetch.open('post', url, true);
+		fetch.setRequestHeader('Content-Type','application/json');
+		fetch.setRequestHeader('accept','application/json');
+		fetch.send(JSON.stringify(systemFetchList));
+	} else {
+		$("#load-text").text("System names loaded...");
+		console.log("Name fetch is done");
+		pullStats();
+	}
 }
 
 function parseSystems() {
@@ -355,7 +444,18 @@ function parseSystems() {
 		data.forEach(function(key) {
 			if (systemKills) {
 				if (Object.keys(systemKills).includes(key.id+"")) {
-					systemKills[key.id+""].name = key.name;
+					systemKills[key.id].name = key.name;
+					var temp = {
+						id: key.id,
+						name: key.name
+					}
+					systemDB.add(temp)
+							.then(function(ref) {
+								console.log("Success adding document: ", temp);
+							})
+							.catch(function (error) {
+								console.error("Error adding document: ", error);
+							});
 				}
 			}
 		});
@@ -504,7 +604,8 @@ function totalFinished() {
 	var keys = Object.keys(fetching);
 	
 	for (var a = 0; a < keys.length; a++) {
-		if (fetching[keys[a]] && fetching[keys[a]].keepGoing == false) {
+		// A 'series' is only considered done if it has been marked done somewhere AND if it isn't waiting on any more calls to finish
+		if (fetching[keys[a]] && fetching[keys[a]].keepGoing == false && fetching[keys[a]].waiting == 0) {
 			done++;
 		}
 	}

@@ -2,6 +2,27 @@
 <html>
 
 <head>
+	<!-- Google firebase -->
+	<!-- Firebase App is always required and must be first -->
+	<script src="https://www.gstatic.com/firebasejs/5.0.1/firebase-app.js"></script>
+	
+	<!-- Add additional services you want to use -->
+	<script src="https://www.gstatic.com/firebasejs/5.0.1/firebase-database.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/5.0.1/firebase-firestore.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/5.0.1/firebase-functions.js"></script>
+	<script>
+		// Initialize Firebase
+		var config = {
+			apiKey: "AIzaSyCGigRKXgRaX7VRMPTJHRAMOtiaDnFzHUE",
+			authDomain: "eve-campaigns.firebaseapp.com",
+			databaseURL: "https://eve-campaigns.firebaseio.com",
+			projectId: "eve-campaigns",
+			storageBucket: "eve-campaigns.appspot.com",
+			messagingSenderId: "1046143635540"
+		};
+		firebase.initializeApp(config);
+	</script>
+	<!-- Bootstrap and vis -->
 	<link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.18.1/vis.min.css" rel="stylesheet" type="text/css" />
 	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4" crossorigin="anonymous">
 	<link rel="stylesheet" href="./bootstrap.css">
@@ -222,7 +243,6 @@
 			</div>
 		</form>
 	</div>
-	
 	<!-- Latest compiled and minified JQuery -->
 	<script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
 	<!-- Latest compiled and minified Bootstrap -->
