@@ -21,6 +21,7 @@
 			messagingSenderId: "1046143635540"
 		};
 		firebase.initializeApp(config);
+		firebase.firestore().settings({timestampsInSnapshots: true});
 	</script>
 	<!-- Bootstrap and vis -->
 	<link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.18.1/vis.min.css" rel="stylesheet" type="text/css" />
