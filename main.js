@@ -13,7 +13,10 @@ var bIDs = [];
 var dates = [];
 
 // Kills stuff
+var dbKills = [];
+var zkbKills = [];
 var allKills = [];
+var keptKills = [];
 var fetching = {};
 
 // Stats stuff
@@ -29,11 +32,6 @@ $(document).ready(function(){
 	if (location.search) {
 		console.log("Bueno: " + location.search);
 		
-		if (location.search == "?test") {
-			getKillsFromDB();
-			return;
-		}
-		
 		// If yes, parse the search
 		var teamA = parseSearch("teamA");
 		var teamB = parseSearch("teamB");
@@ -47,7 +45,6 @@ $(document).ready(function(){
 		
 		// TODO Check for cache here, if cache exists skip all the fetching.
 		getNames(aIDs.concat(bIDs));
-		
 	} else {
 		// If not, load normal page
 		console.log("No bueno");
@@ -150,7 +147,6 @@ function nameError(error) {
 
 function getNames(list) {
 	$("#load-text").text("Attempting to load team names...");
-	
 	timer = Date.now();
 	
 	var url = "https://esi.tech.ccp.is/latest/universe/names/?datasource=tranquility";
@@ -165,6 +161,7 @@ function getNames(list) {
 
 function parseTeamNames() {
 	var data = JSON.parse(this.responseText);
+	var isTest = parseSearch("test");
 	
 	if (data.error) {
 		esiError(data.error);
@@ -176,53 +173,73 @@ function parseTeamNames() {
 			temp.name = data[i].name;
 			temp.type = data[i].category;
 			allIDs[data[i].id] = temp;
-			fetching[data[i].id] = {};
-			fetching[data[i].id].page = 1;
-			fetching[data[i].id].waiting = 0;
-			fetching[data[i].id].keepGoing = true;
-			for (var j = 0; j < 10; j++) {
-				fetchKillMails(data[i].id);
+			
+			if (!isTest) {
+				fetching[data[i].id] = {};
+				fetching[data[i].id].page = 1;
+				fetching[data[i].id].waiting = 0;
+				fetching[data[i].id].keepGoing = true;
+				for (var j = 0; j < 10; j++) {
+					fetchZKillMails(data[i].id);
+				}
 			}
+		}
+		
+		if (isTest) {
+			getKillsFromDB();
+			return;
 		}
 	}
 }
 
-var waitingOnKills = 0;
+var waitingOnDBKills = 0;
 function getKillsFromDB() {
-	dates[0] = "201701010000";
-	dates[1] = "201712012300";
 	var startStamp = new Date(dates[0].substring(0, 4), Number(dates[0].substring(4,6))-1, dates[0].substring(6,8));
 	console.log(startStamp.toISOString());
 	var endStamp = new Date(dates[1].substring(0, 4), Number(dates[1].substring(4,6))-1, dates[1].substring(6,8));
 	console.log(endStamp.toISOString());
 	
 	//*
-	killsDB.where("killmail_time", ">=", startStamp.toISOString())
-			.where("killmail_time", "<=", endStamp.toISOString())
-			.where("victim." +/* allIDs[id].type + */"alliance_id", "==", 99007289)
-			.orderBy("killmail_time")
-			.get()
-			.then(function(snap){
-				if (!snap.empty) {
-					console.log(snap);
-					snap.forEach(function(doc) {
-						console.log(doc.data());
-						//parseKillmail(doc.data(), true);
-					});
-				}
-			})
-			.catch(function(err){
-				console.error("Error fetching killmail: ", err);
-			});
+	for (var id in allIDs) {
+		waitingOnDBKills++;
+		killsDB.where("killmail_time", ">=", startStamp.toISOString())
+				.where("killmail_time", "<=", endStamp.toISOString())
+				.where("victim." + allIDs[id].type + "_id", "==", Number(id))
+				.orderBy("killmail_time")
+				.get()
+				.then(function(snap){
+					if (!snap.empty) {
+						console.log(snap);
+						snap.forEach(function(doc) {
+							dbKills.push(doc.data());
+						});
+					}
+					waitingOnDBKills--;
+				})
+				.catch(function(err){
+					console.error("Error fetching killmail: ", err);
+				});
+	}
+	
+	awaitDBKills();
 	//*/
 }
 
-function fetchKillMails(id) {
+function awaitDBKills() {
+	if (waitingOnDBKills > 0) {
+		console.log("Waiting on DB for killmails");
+		setTimeout(awaitDBKills, 500);
+	}
+	else
+		doneFetchingKills();
+}
+
+function fetchZKillMails(id, missingDates) {
 	var pn = fetching[id].page;
 	fetching[id].page++;
 	console.log("Trying to fetch kills. Page " + pn + " for " + id);
 	
-	var base = "https://zkillboard.com/api/kills/";
+	var base = "https://zkillboard.com/api/losses/";
 	var sTime = "/startTime/";
 	var eTime = "/endTime/";
 	var page = "/no-items/page/";
@@ -255,21 +272,17 @@ function reqsuc() {
 	id = id.substring(0, id.indexOf("/"));
 	
 	// If the page contains data, we want to keep our requests going, otherwise stop them
-	if (data.length < 1) {
+	if (data.length < 200) {
 		fetching[id].keepGoing = false;
 	}
 	
 	// Lets do something with the data
 	for (var i = 0; i < data.length; i++) {
-		parseKillmail(data[i], false);
+		zkbKills.push(data[i]);
 	}
 	
 	// If this is the last fetch, and there was no data on the page, build the webpage
 	fetching[id].waiting--;
-	/*
-	var tempInt = 100 - ((fetching[id].waiting/maxWait)*100);
-	$('#load-progress').attr("value", tempInt);
-	*/
 	var idLength = Object.keys(allIDs).length;
 	if (totalFinished() == idLength && fetching[id].waiting == 0) {
 		console.log("Final being called from: " + fetching[id] + ":" + fetching[id].page + ":" + fetching[id].waiting + ":" + fetching[id].keepGoing);
@@ -277,76 +290,120 @@ function reqsuc() {
 		doneFetchingKills();
 		return;
 	} else if (fetching[id].keepGoing) {
-		fetchKillMails(id);
+		setTimeout(fetchZKillMails(id),500);
 	}
 }
 
-function parseKillmail(data, fromDB) {
-	// Add the kill to our DB for later use
-	/*if (!fromDB) {
-		killsDB.add(data)
-				.then(function(ref){
-					console.log("Kill injected");
-				})
-				.catch(function(error){
-					console.error("Error adding kill to DB: ", error)
-				});
-	}*/
+function doneFetchingKills() {
+	console.log("Cracks knuckles");
+	allKills = dbKills.concat(zkbKills);
 	
+	for (var i = 0; i < allKills.length; i++) {
+		parseKillmail(allKills[i]);
+		
+		var tempInt = ((i/allKills.length)*100);
+		$('#load-progress').attr("value", tempInt);
+	}
+	
+	doneParsingKills();
+}
+
+var killUploadCount = 0;
+function uploadKillsToDB() {
+	var i = killUploadCount;
+	killsDB.where("killmail_id", "==", zkbKills[i].killmail_id)
+			.get()
+			.then(function(snap){
+				if (snap.empty) {
+					killsDB.add(zkbKills[i])
+							.then(function(docRef){
+								console.log("Killmail injected");
+							})
+							.catch(function(err){
+								console.error("Error adding killmail to DB: ", err);
+							});
+				} else {
+					console.log("Kill already exists");
+				}
+				killUploadCount++;
+				if (killUploadCount < zkbKills.length) {
+					uploadKillsToDB();
+				}
+			})
+			.catch(function(err){
+				console.error("Error looking up killmail_id: ", err);
+			});
+}
+
+var systemUploadCount = 0;
+function uploadSystemsToDB() {
+	var i = systemUploadCount;
+	if (systemsToUpload.length > 0) {
+		systemDB.add(systemsToUpload[i])
+				.then(function(ref) {
+					console.log("Success adding system: ", ref);
+					systemUploadCount++;
+					if (systemUploadCount < systemsToUpload.length)
+						uploadSystemsToDB();
+					else
+						setTimeout(uploadKillsToDB(), 1000);
+				})
+				.catch(function (error) {
+					console.error("Error adding system: ", error);
+				});
+	} //else
+		//setTimeout(uploadKillsToDB(), 1000);
+}
+
+function parseKillmail(data) {
 	var victim = data.victim;
 	// Used for the arrays. Defaulting to -1 for error catching. Should never see it, but juuuuuust in case.
+	// 0 = Team A kill, 1 = Team B kill
 	var team = getTeam(victim);
 	
 	// Make sure the victim is in our list of wanted IDs (Checking all of them since we don't know which fetch call this came from)
-	if (Object.keys(allIDs).includes(victim.alliance_id + "") || Object.keys(allIDs).includes(victim.corporation_id + "") || Object.keys(allIDs).includes(victim.character_id + "")) {
+	if (team >= 0) {// && (Object.keys(allIDs).includes(victim.alliance_id + "") || Object.keys(allIDs).includes(victim.corporation_id + "") || Object.keys(allIDs).includes(victim.character_id + ""))) {
 		
 		// We don't want awox kills to be counted, they throw off the totals.
 		if (data.zkb.awox) {
 			return;
 		}
-		// We also need to ignore "whored" kills.
+		// We also need to make sure a killmail involves the proper parties.
 		else {
-			var hasWhore = false;
-			var whoreOnly = true;
+			var doKeep = false;
 			var useIDs = (team == 0 ? aIDs : bIDs);
 			for (var j = 0; j < data.attackers.length; j++) {
-				if (data.attackers[j].corporation_id == victim.corporation_id || data.attackers[j].alliance_id == victim.alliance_id) {
-					hasWhore = true;
-				} else if (Object.keys(useIDs).includes(data.attackers[j].corporation_id) || Object.keys(useIDs).includes(data.attackers[j].alliance_id) || Object.keys(useIDs).includes(data.attackers[j].character_id)) {
-					whoreOnly = false;
-				}
+				if (useIDs.includes(data.attackers[j].corporation_id+"") || useIDs.includes(data.attackers[j].alliance_id+"") || useIDs.includes(data.attackers[j].character_id+""))
+					doKeep = true;
 			}
-			if (hasWhore && whoreOnly) {
+			if (!doKeep)
 				return;
-			}
 		}
 		
 		// If this killmail passes the above checks, we want to keep it. First check to make sure we don't have this kill already.
 		if (!mailIDs.includes(data.killmail_id)) {
-			allKills.push(data);
+			keptKills.push(data);
 			mailIDs.push(data.killmail_id);
 		
 			// STATS COLLECTION
-			if (team >= 0) {
-				// Track total kills
-				totalKills[team] += 1;
-				
-				// Track total kill values
-				totalValues[team] += data.zkb.totalValue;
-				
-				// Track kills per ship per team
-					// Topkeks that's gonna be fun
-				
-				// Track kills per system per team
-				var sysID = data.solar_system_id;
-				
-				if (!systemKills.hasOwnProperty(sysID))
-					systemKills[sysID] = {};
-				if (team == 0)
-					(systemKills[sysID].hasOwnProperty("a")) ? systemKills[sysID].a++ : systemKills[sysID].a = 1;
-				if (team == 1)
-					(systemKills[sysID].hasOwnProperty("b")) ? systemKills[sysID].b++ : systemKills[sysID].b = 1;
-			}
+			// Track total kills
+			totalKills[team] += 1;
+			
+			// Track total kill values
+			totalValues[team] += data.zkb.totalValue;
+			
+			// Track kills per ship per team
+				// Topkeks that's gonna be fun
+			
+			// Track kills per system per team
+			var sysID = data.solar_system_id;
+			
+			if (!systemKills.hasOwnProperty(sysID))
+				systemKills[sysID] = {};
+			if (team == 0)
+				(systemKills[sysID].hasOwnProperty("a")) ? systemKills[sysID].a++ : systemKills[sysID].a = 1;
+			if (team == 1)
+				(systemKills[sysID].hasOwnProperty("b")) ? systemKills[sysID].b++ : systemKills[sysID].b = 1;
 		}
 	}
 }
@@ -356,15 +413,14 @@ function reqerror(error) {
 	$("#load-text").text("Something bad happened somewhere...\n" + error);
 }
 
-function doneFetchingKills() {
+function doneParsingKills() {
 	console.log("Kill fetch is done");
-	// TODO cache this request here
 	
 	// Sort kills by date
-	allKills.sort(by('killmail_time'));
+	keptKills.sort(by('killmail_time'));
 	
 	// Check if there are any kills
-	if (allKills.length > 0) {
+	if (keptKills.length > 0) {
 		// Do system name lookups
 		loadSystemNames();
 	} else {
@@ -392,7 +448,6 @@ function loadSystemNames() {
 					.then(function(snap) {
 						if (!snap.empty) {
 							snap.forEach(function(doc) {
-								console.log("Successfully found " + key);
 								systemKills[doc.data().id].name = doc.data().name;
 							});
 						} else {
@@ -414,19 +469,24 @@ function fetchSystemNames() {
 	// Make sure all DB calls are complete before trying to fetch data from ESI
 	if (waitingOnSystems > 0) {
 		setTimeout(fetchSystemNames, 100);
-		console.log("Waiting");
+		console.log("Waiting on DB for system names");
 		return;
 	} else if (systemFetchList.length > 0) {
 		console.log("Ready");
 		console.log("System list: ", systemFetchList);
-		var url = "https://esi.tech.ccp.is/latest/universe/names/?datasource=tranquility";
-		var fetch = new XMLHttpRequest();
-		fetch.onload = parseSystems;
-		fetch.onerror = reqerror;
-		fetch.open('post', url, true);
-		fetch.setRequestHeader('Content-Type','application/json');
-		fetch.setRequestHeader('accept','application/json');
-		fetch.send(JSON.stringify(systemFetchList));
+		
+		for (var i = 0; (i*500)<systemFetchList.length;i++) {
+			waitingOnSystems++;
+			var tempList = systemFetchList.slice(i*500, Math.min(((i+1)*500), systemFetchList.length))
+			var url = "https://esi.tech.ccp.is/latest/universe/names/?datasource=tranquility";
+			var fetch = new XMLHttpRequest();
+			fetch.onload = parseSystems;
+			fetch.onerror = reqerror;
+			fetch.open('post', url, true);
+			fetch.setRequestHeader('Content-Type','application/json');
+			fetch.setRequestHeader('accept','application/json');
+			fetch.send(JSON.stringify(tempList));
+		}
 	} else {
 		$("#load-text").text("System names loaded...");
 		console.log("Name fetch is done");
@@ -434,6 +494,7 @@ function fetchSystemNames() {
 	}
 }
 
+var systemsToUpload = [];
 function parseSystems() {
 	var data = JSON.parse(this.responseText);
 	
@@ -449,20 +510,16 @@ function parseSystems() {
 						id: key.id,
 						name: key.name
 					}
-					systemDB.add(temp)
-							.then(function(ref) {
-								console.log("Success adding document: ", temp);
-							})
-							.catch(function (error) {
-								console.error("Error adding document: ", error);
-							});
+					systemsToUpload.push(temp);
 				}
 			}
 		});
-		
-		$("#load-text").text("System names loaded...");
-		console.log("Name fetch is done");
-		pullStats();
+		waitingOnSystems--;
+		if (waitingOnSystems == 0) {
+			$("#load-text").text("System names loaded...");
+			console.log("Name fetch is done");
+			pullStats();
+		}
 	}
 }
 
@@ -471,7 +528,7 @@ function pullStats() {
 	console.log("Loading everything onto the page");
 	
 	// TODO At some point, add something to actually display kills
-	//for (var i = 0; i < allKills.length; i++) {}
+	//for (var i = 0; i < keptKills.length; i++) {}
 	
 	// Header things
 	var finalTime = Date.now() - timer;
@@ -490,14 +547,20 @@ function pullStats() {
 	$('#TeamA').find('#names').text(aTeamNames);
 	$('#TeamB').find('#names').text(bTeamNames);
 	
+	console.log("Names in place");
+	
 	// Replace kill count
 	$('#TeamA').find('#kills').text(totalKills[0].toLocaleString(undefined, {maximumFractionDigits:2}));
 	$('#TeamB').find('#kills').text(totalKills[1].toLocaleString(undefined, {maximumFractionDigits:2}));
+	
+	console.log("Kill count in place");
 	
 	// Replace isk values
 	$('#TeamA').find('#value').text(totalValues[0].toLocaleString(undefined, {maximumFractionDigits:2}));
 	$('#TeamB').find('#value').text(totalValues[1].toLocaleString(undefined, {maximumFractionDigits:2}));
 	
+	console.log("Isk totals in place");
+	/*
 	// Set system names
 	var aTeamSystems = "<tr><th style=\"text-align:center\">System name</th><th style=\"text-align:center\">Kills</th></tr>";
 	var bTeamSystems = aTeamSystems;
@@ -510,13 +573,15 @@ function pullStats() {
 					bTeamSystems += "<tr><td>" + v.name + "</td><td>" + v.kills.toLocaleString(undefined, {maximumFractionDigits:2}) + "</td></tr>";
 			});
 		}
-	}
+	}*/
 	
 	var systemKillTable = "<tr><th style=\"text-align:center\">Team A Kills</th><th style=\"text-align:center\">System name</th><th style=\"text-align:center\">Team B Kills</th></tr>";
 	Object.values(systemKills).forEach(function(v) {
 		systemKillTable += "<tr><td>" + ((v.a) ? v.a : "---") + "</td><td>" + v.name + "</td><td>" + ((v.b) ? v.b : "---") + "</td></tr>";
 	});
 	$('#systemKills').append(systemKillTable);
+	
+	console.log("Systems table in place");
 	
 	sortTable();
 	console.log("Done");
@@ -525,6 +590,8 @@ function pullStats() {
 		$('#loading-page').hide(2000);
 		$('#campaign-page').show(2000);
 	}, 1000);
+	
+	uploadSystemsToDB();
 }
 
 function dateChange(elem, target, attribute) {
@@ -545,9 +612,13 @@ function sortTable() {
 	
 	table = document.getElementById("systemKills");
 	switching = true;
+	
+	console.log("Sorting table start");
+	
 	/* Make a loop that will continue until
 	no switching has been done: */
 	while (switching) {
+		console.log("Big loop");
 		// Start by saying: no switching is done:
 		switching = false;
 		rows = table.getElementsByTagName("TR");
@@ -585,6 +656,8 @@ function sortTable() {
 			switching = true;
 		}
 	}
+	
+	console.log("Sorting table done");
 }
 
 function parseTimer(duration) {
@@ -669,4 +742,5 @@ function parseSearch(variable) {
         }
     }
     console.log('Query variable %s not found', variable);
+	return false;
 }
