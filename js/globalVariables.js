@@ -2,7 +2,7 @@
 var loadOnly = false;
 var db = firebase.firestore();
 var systemDB = db.collection("systems");
-var nameDB = db.collection("entities");
+var entityDB = db.collection("entities");
 var killsDB = db.collection("killmails");
 
 // Default page stuff
@@ -32,13 +32,13 @@ var timer = 0;
 // Trackers for DB and ESI fetching
 var systemFetchList = [];
 var systemsToUpload = [];
-var nameFetchList = [];
-var namesToUpload = [];
+var entityFetchList = [];
+var entitiesToUpload = [];
 
 // Counters
 var waitingOnSystems = 0;
 var waitingOnNames = 0;
 var waitingOnDBKills = 0;
 var systemUploadCount = 0;
-var nameUploadCount = 0;
+var entityUploadCount = 0;
 var killUploadCount = 0;
