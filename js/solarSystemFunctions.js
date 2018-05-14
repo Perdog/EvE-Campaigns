@@ -6,14 +6,15 @@ function loadSystemNames() {
 	systemFetchList = [];
 	
 	if (systemKills) {
-		Object.keys(systemKills).forEach(function(key) {
-			key = Number(key);
+		Object.keys(systemKills).forEach(function(item) {
+			var key = Number(item);
 			// Increment our wait variable. If JS won't give me a proper wait function, I'll make it myself
 			waitingOnSystems++;
 			systemDB.where('id', '==', key)
 					.get()
 					.then(function(snap) {
 						if (!snap.empty) {
+							console.log("Found system ID for " + key);
 							snap.forEach(function(doc) {
 								systemKills[doc.data().id].name = doc.data().name;
 							});
@@ -76,7 +77,7 @@ function parseSystems() {
 					var temp = {
 						id: key.id,
 						name: key.name
-					}
+					};
 					systemsToUpload.push(temp);
 				}
 			}
@@ -84,7 +85,7 @@ function parseSystems() {
 		waitingOnSystems--;
 		if (waitingOnSystems == 0) {
 			$("#load-text").text("System names loaded...");
-			console.log("Name fetch is done");
+			console.log("System fetch is done");
 			pullStats();
 		}
 	}
