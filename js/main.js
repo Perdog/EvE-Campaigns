@@ -21,8 +21,7 @@ $(document).ready(function(){
 			$("#load-text").text("Starting...");
 		}
 		
-		// TODO Check for cache here, if cache exists skip all the fetching.
-		loadNames(aIDs.concat(bIDs));
+		loadEntityNames(aIDs.concat(bIDs));
 	} else {
 		// If not, load normal page
 		console.log("No bueno");
