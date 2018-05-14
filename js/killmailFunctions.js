@@ -1,4 +1,15 @@
+function loadKillmails() {
+	console.log("Preparing to load killmails");
+	// Will need this to call DB first, eventually
+	Object.keys(allIDs).forEach(function(key) {
+		for (var i = 0; i < 10; i++) {
+			fetchZKillMails(key, true, null, null);
+		}
+	});
+}
+
 function getKillsFromDB() {
+	$("#load-text").text("Fetching killmails... 0/0");
 	var startStamp = new Date(dates[0].substring(0, 4), Number(dates[0].substring(4,6))-1, dates[0].substring(6,8));
 	console.log(startStamp.toISOString());
 	var endStamp = new Date(dates[1].substring(0, 4), Number(dates[1].substring(4,6))-1, dates[1].substring(6,8));
@@ -19,6 +30,9 @@ function getKillsFromDB() {
 							dbKills.push(doc.data());
 						});
 					}
+					else {
+						
+					}
 					waitingOnDBKills--;
 				})
 				.catch(function(err){
@@ -35,14 +49,17 @@ function awaitDBKills() {
 		console.log("Waiting on DB for killmails");
 		setTimeout(awaitDBKills, 500);
 	}
-	else
-		doneFetchingKills();
+	// Needs to be changed to call fetchZKillMails()
+	else {
+		$("#load-text").text("Fetching killmails... 0/" + dbKills.length);
+		//doneFetchingKills();
+	}
 }
 
-function fetchZKillMails(id, missingDates) {
-	var pn = fetching[id].page;
-	fetching[id].page++;
-	console.log("Trying to fetch kills. Page " + pn + " for " + id);
+function fetchZKillMails(entID, fullSearch, killID, dateToUse) {
+	var pn = fetching[entID].page;
+	fetching[entID].page++;
+	console.log("Fetching page " + pn + " for " + entID);
 	
 	var base = "https://zkillboard.com/api/losses/";
 	var sTime = "/startTime/";
@@ -50,13 +67,17 @@ function fetchZKillMails(id, missingDates) {
 	var page = "/no-items/page/";
 	var dontForgetThis = "/";
 	
-	if (!fetching[id].keepGoing) {
+	if (!fetching[entID].keepGoing) {
 		return;
 	}
 	
-	fetching[id].waiting++;
+	fetching[entID].waiting++;
 	
-	var zurl = base + allIDs[id].type + "ID/" + id + sTime + dates[0] + eTime + dates[1] + page + pn + dontForgetThis;
+	var zurl = "";
+	if (fullSearch)
+		zurl = base + allIDs[entID].type + "ID/" + entID + sTime + dates[0] + eTime + dates[1] + page + pn + dontForgetThis;
+	else
+		zurl = base + allIDs[entID].type + "ID/" + entID + sTime + dates[0] + eTime + dates[1] + page + pn + dontForgetThis;
 	var fetch = new XMLHttpRequest();
 	fetch.onload = reqsuc;
 	fetch.onerror = reqerror;
@@ -74,27 +95,47 @@ function reqsuc() {
 	id = id.substring(id.indexOf("ID/")+3);
 	id = id.substring(0, id.indexOf("/"));
 	
-	// If the page contains data, we want to keep our requests going, otherwise stop them
+	// If the page contains less then 200 results, it's the last one for this ID
 	if (data.length < 200) {
 		fetching[id].keepGoing = false;
 	}
 	
-	// Lets do something with the data
+	// Store all kills to process later
 	for (var i = 0; i < data.length; i++) {
 		zkbKills.push(data[i]);
 	}
 	
-	// If this is the last fetch, and there was no data on the page, build the webpage
+	// If this is the last fetch for this ID, and no other IDs are still searching, it's time to build the page
 	fetching[id].waiting--;
 	var idLength = Object.keys(allIDs).length;
 	if (totalFinished() == idLength && fetching[id].waiting == 0) {
 		console.log("Final being called from: " + fetching[id] + ":" + fetching[id].page + ":" + fetching[id].waiting + ":" + fetching[id].keepGoing);
-		$("#load-text").text("All possible kills found...");
-		doneFetchingKills();
+		setTimeout(doneFetchingKills(), 1000);
 		return;
 	} else if (fetching[id].keepGoing) {
-		setTimeout(fetchZKillMails(id),500);
+		setTimeout(fetchZKillMails(id, true),100);
 	}
+	$("#load-text").text("Fetching killmails... 0/" + (dbKills.length + zkbKills.length));
+}
+
+function doneFetchingKills() {
+	console.log("*Cracks knuckles*");
+	allKills = dbKills.concat(zkbKills);
+	
+	if (loadOnly) {
+		uploadSystemsToDB();
+		return;
+	}
+	
+	for (var i = 0; i < allKills.length; i++) {
+		parseKillmail(allKills[i]);
+		
+		$("#load-text").text("Reading killmails... " + i + "/" + (allKills.length));
+		var tempInt = ((i/allKills.length)*100);
+		$('#load-progress').attr("value", tempInt);
+	}
+	
+	setTimeout(doneParsingKills(), 1000);
 }
 
 function parseKillmail(data) {
@@ -104,8 +145,7 @@ function parseKillmail(data) {
 	var team = getTeam(victim);
 	
 	// Make sure the victim is in our list of wanted IDs (Checking all of them since we don't know which fetch call this came from)
-	if (team >= 0) {// && (Object.keys(allIDs).includes(victim.alliance_id + "") || Object.keys(allIDs).includes(victim.corporation_id + "") || Object.keys(allIDs).includes(victim.character_id + ""))) {
-		
+	if (team >= 0) {
 		// We don't want awox kills to be counted, they throw off the totals.
 		if (data.zkb.awox) {
 			return;
@@ -150,22 +190,8 @@ function parseKillmail(data) {
 	}
 }
 
-function doneFetchingKills() {
-	console.log("Cracks knuckles");
-	allKills = dbKills.concat(zkbKills);
-	
-	for (var i = 0; i < allKills.length; i++) {
-		parseKillmail(allKills[i]);
-		
-		var tempInt = ((i/allKills.length)*100);
-		$('#load-progress').attr("value", tempInt);
-	}
-	
-	doneParsingKills();
-}
-
 function doneParsingKills() {
-	console.log("Kill fetch is done");
+	console.log("Kill parsing is done");
 	
 	// Sort kills by date
 	keptKills.sort(by('killmail_time'));
@@ -175,9 +201,9 @@ function doneParsingKills() {
 		// Do system name lookups
 		loadSystemNames();
 	} else {
-		$("#load-static").text("No kills were found for this campaign. Git gud.");
+		$("#load-static").text("No kills were found for this campaign. Git gud scrubs.");
 		$("#load-text").text("");
-		pullStats();
+		setTimeout(pullStats(), 1000);
 	}
 }
 
@@ -218,20 +244,6 @@ function pullStats() {
 	$('#TeamB').find('#value').text(totalValues[1].toLocaleString(undefined, {maximumFractionDigits:2}));
 	
 	console.log("Isk totals in place");
-	/*
-	// Set system names
-	var aTeamSystems = "<tr><th style=\"text-align:center\">System name</th><th style=\"text-align:center\">Kills</th></tr>";
-	var bTeamSystems = aTeamSystems;
-	for (var i = 0; i < systems.length; i++) {
-		if (systems[i]) {
-			Object.values(systems[i]).forEach(function(v) {
-				if (i == 0)
-					aTeamSystems += "<tr><td>" + v.name + "</td><td>" + v.kills.toLocaleString(undefined, {maximumFractionDigits:2}) + "</td></tr>";
-				else
-					bTeamSystems += "<tr><td>" + v.name + "</td><td>" + v.kills.toLocaleString(undefined, {maximumFractionDigits:2}) + "</td></tr>";
-			});
-		}
-	}*/
 	
 	var systemKillTable = "<tr><th style=\"text-align:center\">Team A Kills</th><th style=\"text-align:center\">System name</th><th style=\"text-align:center\">Team B Kills</th></tr>";
 	Object.values(systemKills).forEach(function(v) {
