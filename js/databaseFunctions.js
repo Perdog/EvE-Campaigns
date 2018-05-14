@@ -17,7 +17,7 @@ function uploadKillsToDB() {
 				} else {
 					console.log("Uploading killmails... " + i + "/" + zkbKills.length + "(Existed)");
 				}
-				$("#load-text").text("Uploading killmails... " + i + "/" + zkbKills.length);
+				$("#load-text").text("Uploading killmails... " + i + "/" + zkbKills.length + "\n" + (Math.round((i/zkbKills.length)*100000)/1000) + "%");
 				var tempInt = ((i/zkbKills.length)*100);
 				$('#load-progress').attr("value", tempInt);
 				killUploadCount++;
