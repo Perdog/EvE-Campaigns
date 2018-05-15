@@ -55,6 +55,8 @@ function nameError(error) {
 }
 
 function loadEntityNames(list) {
+	timer = Date.now();
+	
 	console.log("Fetching team names");
 	$("#load-text").text("Looking up team IDs");
 	
@@ -82,7 +84,6 @@ function loadEntityNames(list) {
 								fetching[key].keepGoing = true;
 							});
 						} else {
-							console.log("Test");
 							console.log("Failed to find " + key + ", search ESI for it");
 							if (!entityFetchList.includes(key))
 								entityFetchList.push(key);
@@ -98,8 +99,6 @@ function loadEntityNames(list) {
 }
 
 function fetchEntityNames() {
-	timer = Date.now();
-	
 	// Make sure all DB calls are complete before trying to fetch data from ESI
 	if (waitingOnNames > 0) {
 		setTimeout(fetchEntityNames, 100);

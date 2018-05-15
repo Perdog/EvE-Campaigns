@@ -124,6 +124,7 @@ function doneFetchingKills() {
 	
 	if (loadOnly) {
 		uploadSystemsToDB();
+		timer = Date.now();
 		return;
 	}
 	

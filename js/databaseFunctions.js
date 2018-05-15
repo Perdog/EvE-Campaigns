@@ -1,6 +1,7 @@
 
 function uploadKillsToDB() {
 	var i = killUploadCount;
+	var newKillmail = 0;
 	if (i == zkbKills.length)
 		return;
 	killsDB.where("killmail_id", "==", zkbKills[i].killmail_id)
@@ -10,6 +11,7 @@ function uploadKillsToDB() {
 					killsDB.add(zkbKills[i])
 							.then(function(docRef){
 								console.log("Uploading killmails... " + i + "/" + zkbKills.length + "(New)");
+								newKillmail++;
 							})
 							.catch(function(err){
 								console.error("Error adding killmail to DB: ", err);
@@ -17,12 +19,15 @@ function uploadKillsToDB() {
 				} else {
 					console.log("Uploading killmails... " + i + "/" + zkbKills.length + "(Existed)");
 				}
-				$("#load-text").text("Uploading killmails... " + i + "/" + zkbKills.length + "\n" + (Math.round((i/zkbKills.length)*100000)/1000) + "%");
+				$("#load-text").text("Uploading killmails... " + (i+1) + "/" + zkbKills.length + "\n" + (Math.round((i/zkbKills.length)*100000)/1000) + "%");
 				var tempInt = ((i/zkbKills.length)*100);
 				$('#load-progress').attr("value", tempInt);
 				killUploadCount++;
 				if (killUploadCount < zkbKills.length) {
 					uploadKillsToDB();
+				} else {
+					var finalTime = Date.now() - timer;
+					$("#load-text").text("Done uploading. It took " + parseTimer(finalTime) + " to complete. " + newKillmail + " out of " + zkbKills.length + " were new.");
 				}
 			})
 			.catch(function(err){
@@ -36,7 +41,7 @@ function uploadSystemsToDB() {
 		systemDB.add(systemsToUpload[i])
 				.then(function(ref) {
 					console.log("Success adding system: ", ref);
-					$("#load-text").text("Uploading systems... " + i + "/" + systemsToUpload.length);
+					$("#load-text").text("Uploading systems... " + (i+1) + "/" + systemsToUpload.length);
 					systemUploadCount++;
 					if (systemUploadCount < systemsToUpload.length)
 						uploadSystemsToDB();
@@ -56,7 +61,7 @@ function uploadEntitiesToDB() {
 		entityDB.add(entitiesToUpload[i])
 				.then(function(ref) {
 					console.log("Success adding entity: ", ref);
-					$("#load-text").text("Uploading entities... " + i + "/" + entitiesToUpload.length);
+					$("#load-text").text("Uploading entities... " + (i+1) + "/" + entitiesToUpload.length);
 					entityUploadCount++;
 					if (entityUploadCount < entitiesToUpload.length)
 						uploadEntitiesToDB();
