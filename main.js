@@ -217,7 +217,7 @@ function reqsuc() {
 	id = id.substring(0, id.indexOf("/"));
 	
 	// If the page contains data, we want to keep our requests going, otherwise stop them
-	if (data.length < 1) {
+	if (data.length < 200) {
 		fetching[id].keepGoing = false;
 	}
 	
