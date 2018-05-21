@@ -227,8 +227,7 @@ function reqsuc() {
 		// Used for the arrays. Defaulting to -1 for error catching. Should never see it, but juuuuuust in case.
 		var team = getTeam(victim);
 		
-		// Make sure the victim is in our list of wanted IDs (Checking all of them since we don't know which fetch call this came from)
-		if (Object.keys(allIDs).includes(victim.alliance_id + "") || Object.keys(allIDs).includes(victim.corporation_id + "") || Object.keys(allIDs).includes(victim.character_id + "")) {
+		if (team >= 0) {
 			
 			// We don't want awox kills to be counted, they throw off the totals.
 			if (data[i].zkb.awox) {
@@ -236,19 +235,14 @@ function reqsuc() {
 			}
 			// We also need to ignore "whored" kills.
 			else {
-				var hasWhore = false;
-				var whoreOnly = true;
+				var doKeep = false;
 				var useIDs = (team == 0 ? aIDs : bIDs);
 				for (var j = 0; j < data[i].attackers.length; j++) {
-					if (data[i].attackers[j].corporation_id == victim.corporation_id || data[i].attackers[j].alliance_id == victim.alliance_id) {
-						hasWhore = true;
-					} else if (Object.keys(useIDs).includes(data[i].attackers[j].corporation_id) || Object.keys(useIDs).includes(data[i].attackers[j].alliance_id) || Object.keys(useIDs).includes(data[i].attackers[j].character_id)) {
-						whoreOnly = false;
-					}
+					if (useIDs.includes(data[i].attackers[j].corporation_id+"") || useIDs.includes(data[i].attackers[j].alliance_id+"") || useIDs.includes(data[i].attackers[j].character_id+""))
+						doKeep = true;
 				}
-				if (hasWhore && whoreOnly) {
+				if (!doKeep)
 					continue;
-				}
 			}
 			
 			// If this killmail passes the above checks, we want to keep it. First check to make sure we don't have this kill already.
@@ -257,26 +251,24 @@ function reqsuc() {
 				mailIDs.push(data[i].killmail_id);
 			
 				// STATS COLLECTION
-				if (team >= 0) {
-					// Track total kills
-					totalKills[team] += 1;
-					
-					// Track total kill values
-					totalValues[team] += data[i].zkb.totalValue;
-					
-					// Track kills per ship per team
-						// Topkeks that's gonna be fun
-					
-					// Track kills per system per team
-					var sysID = data[i].solar_system_id;
-					
-					if (!systemKills.hasOwnProperty(sysID))
-						systemKills[sysID] = {};
-					if (team == 0)
-						(systemKills[sysID].hasOwnProperty("a")) ? systemKills[sysID].a++ : systemKills[sysID].a = 1;
-					if (team == 1)
-						(systemKills[sysID].hasOwnProperty("b")) ? systemKills[sysID].b++ : systemKills[sysID].b = 1;
-				}
+				// Track total kills
+				totalKills[team] += 1;
+				
+				// Track total kill values
+				totalValues[team] += data[i].zkb.totalValue;
+				
+				// Track kills per ship per team
+					// Topkeks that's gonna be fun
+				
+				// Track kills per system per team
+				var sysID = data[i].solar_system_id;
+				
+				if (!systemKills.hasOwnProperty(sysID))
+					systemKills[sysID] = {};
+				if (team == 0)
+					(systemKills[sysID].hasOwnProperty("a")) ? systemKills[sysID].a++ : systemKills[sysID].a = 1;
+				if (team == 1)
+					(systemKills[sysID].hasOwnProperty("b")) ? systemKills[sysID].b++ : systemKills[sysID].b = 1;
 			}
 		}
 	}
