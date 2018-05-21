@@ -291,11 +291,12 @@ function reqsuc() {
 	var idLength = Object.keys(allIDs).length;
 	
 	if (totalFinished() == idLength && fetching[id].waiting == 0) {
+		console.log("Final being called from: %s:" + fetching[id].page + ":" + fetching[id].waiting + ":" + fetching[id].keepGoing, fetching[id]);
+		setTimeout(doneFetchingKills(), 1000);
 		$("#load-text").text("All possible kills found...");
-		doneFetchingKills();
 		return;
 	} else if (fetching[id].keepGoing) {
-		fetchKillMails(id);
+		setTimeout(fetchKillMails(id), 100);
 	}
 }
 
@@ -504,7 +505,8 @@ function totalFinished() {
 	var keys = Object.keys(fetching);
 	
 	for (var a = 0; a < keys.length; a++) {
-		if (fetching[keys[a]] && fetching[keys[a]].keepGoing == false) {
+		// A 'series' is only considered done if it has been marked done somewhere AND if it isn't waiting on any more calls to finish
+		if (fetching[keys[a]] && fetching[keys[a]].keepGoing == false && fetching[keys[a]].waiting == 0) {
 			done++;
 		}
 	}
