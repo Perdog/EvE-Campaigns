@@ -52,7 +52,7 @@ function awaitDBKills() {
 	// Needs to be changed to call fetchZKillMails()
 	else {
 		$("#load-text").text("Fetching killmails... 0/" + dbKills.length);
-		//doneFetchingKills();
+		doneFetchingKills();
 	}
 }
 
