@@ -376,12 +376,16 @@ function pullStats() {
 	var bTeamNames = "";
 	Object.keys(allIDs).forEach(function(key) {
 		if (aIDs.includes(key))
-			aTeamNames += allIDs[key].name + "\n";
+			aTeamNames +=
+			"<img src=\"https://image.eveonline.com/" + allIDs[key].type + "/" + key + "_64.png\" />"
+			+ "  " + allIDs[key].name + "\n";
 		else if (bIDs.includes(key))
-			bTeamNames += allIDs[key].name + "\n";
+			bTeamNames +=
+			"<img src=\"https://image.eveonline.com/" + allIDs[key].type + "/" + key + "_64.png\" />"
+			+ "  " + allIDs[key].name + "\n";
 	});
-	$('#TeamA').find('#names').text(aTeamNames);
-	$('#TeamB').find('#names').text(bTeamNames);
+	$('#TeamA').find('#names').append(aTeamNames);
+	$('#TeamB').find('#names').append(bTeamNames);
 	
 	// Replace kill count
 	$('#TeamA').find('#kills').text(totalKills[0].toLocaleString(undefined, {maximumFractionDigits:2}));
