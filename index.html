@@ -96,6 +96,11 @@
 	</style>
 </head>
 <body>
+	
+	<div id="page-header" class="row">
+		<p id="server-status">Server status: Unknown    Players online: Unknown</p>
+	</div>
+	
 	<div id="loading-page" class="dynamic-content">
 		<p id="load-static">Loading... this could take a few minutes, please be patient</p>
 		<p id="load-text"></p>
@@ -184,6 +189,7 @@
 				<div class="center-content">
 					<!-- Ship types used -->
 					<button class="collapsible">Ship stats</button>
+					<br />
 					<div class="row content">
 						<table style="width:100%">
 							<tbody id="shipStats" style="text-align:center">
@@ -204,6 +210,7 @@
 					<br />
 					<!-- Page killboard. Needs endless scroll -->
 					<button class="collapsible">Kills</button>
+					<br />
 					<div class="row content">
 						<div class="column">
 							<div style="text-align:center">Team A</div>
