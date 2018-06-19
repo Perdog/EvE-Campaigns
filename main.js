@@ -16,6 +16,7 @@ var totalKills = [0,0];
 var totalValues = [0,0];
 var systems = [];
 var systemKills = {};
+var pilotStats = {};
 var mailIDs = [];
 var timer = 0;
 
@@ -254,6 +255,27 @@ function reqsuc() {
 				// Track total kills
 				totalKills[team] += 1;
 				
+				// Track pilot kills
+				for (var j = 0; j < data[i].attackers.length; j++) {
+					var attacker = data[i].attackers[j];
+					var attID = attacker.character_id;
+					var idSelected = ((allIDs.hasOwnProperty(attacker.alliance_id)) ? attacker.alliance_id : ((allIDs.hasOwnProperty(attacker.corporation_id)) ? attacker.corporation_id : ((allIDs.hasOwnProperty(attID)) ? attID : null)));
+					
+					if (idSelected) {
+						if (!pilotStats.hasOwnProperty(attID)) {
+							pilotStats[attID] = {};
+							pilotStats[attID].kills = 1;
+							if (i == 0) {
+								console.log(allIDs.hasOwnProperty(attacker.alliance_id));
+								console.log(allIDs.hasOwnProperty(attacker.corporation_id));
+							}
+							pilotStats[attID].group = idSelected;
+						} else {
+							pilotStats[attID].kills++;
+						}
+					}
+				}
+				
 				// Track total kill values
 				totalValues[team] += data[i].zkb.totalValue;
 				
@@ -299,6 +321,7 @@ function reqerror(error) {
 
 function doneFetchingKills() {
 	console.log("Kill fetch is done");
+	console.log(pilotStats);
 	// TODO cache this request here
 	
 	// Sort kills by date
@@ -394,6 +417,9 @@ function pullStats() {
 	// Replace isk values
 	$('#TeamA').find('#value').text(totalValues[0].toLocaleString(undefined, {maximumFractionDigits:2}));
 	$('#TeamB').find('#value').text(totalValues[1].toLocaleString(undefined, {maximumFractionDigits:2}));
+	
+	// Set pilot stats
+	
 	
 	// Set system names
 	var aTeamSystems = "<tr><th style=\"text-align:center\">System name</th><th style=\"text-align:center\">Kills</th></tr>";
