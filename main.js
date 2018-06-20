@@ -16,7 +16,7 @@ var totalKills = [0,0];
 var totalValues = [0,0];
 var systems = [];
 var systemKills = {};
-var pilotStats = {};
+var pilotStats = [];
 var mailIDs = [];
 var timer = 0;
 
@@ -262,16 +262,15 @@ function reqsuc() {
 					var idSelected = ((allIDs.hasOwnProperty(attacker.alliance_id)) ? attacker.alliance_id : ((allIDs.hasOwnProperty(attacker.corporation_id)) ? attacker.corporation_id : ((allIDs.hasOwnProperty(attID)) ? attID : null)));
 					
 					if (idSelected) {
-						if (!pilotStats.hasOwnProperty(attID)) {
-							pilotStats[attID] = {};
-							pilotStats[attID].kills = 1;
-							if (i == 0) {
-								console.log(allIDs.hasOwnProperty(attacker.alliance_id));
-								console.log(allIDs.hasOwnProperty(attacker.corporation_id));
-							}
-							pilotStats[attID].group = idSelected;
+						var pilot = pilotStats.filter(x => x.id == attID)[0];
+						if (!pilot) {
+							var temp = {};
+							temp.id = attID;
+							temp.kills = 1;
+							temp.group = idSelected;
+							pilotStats.push(temp);
 						} else {
-							pilotStats[attID].kills++;
+							pilot.kills++;
 						}
 					}
 				}
@@ -305,7 +304,7 @@ function reqsuc() {
 	var idLength = Object.keys(allIDs).length;
 	
 	if (totalFinished() == idLength && fetching[id].waiting == 0) {
-		console.log("Final being called from: %s:" + fetching[id].page + ":" + fetching[id].waiting + ":" + fetching[id].keepGoing, fetching[id]);
+		console.log("Final being called from: " + allIDs[id].name + "\nPage:" + fetching[id].page);
 		setTimeout(doneFetchingKills(), 1000);
 		$("#load-text").text("All possible kills found...");
 		return;
@@ -321,7 +320,6 @@ function reqerror(error) {
 
 function doneFetchingKills() {
 	console.log("Kill fetch is done");
-	console.log(pilotStats);
 	// TODO cache this request here
 	
 	// Sort kills by date
@@ -377,7 +375,53 @@ function parseSystems() {
 		});
 		
 		$("#load-text").text("System names loaded...");
-		console.log("Name fetch is done");
+		console.log("System fetch is done");
+		//pullStats();
+		fetchCharNames();
+	}
+}
+
+function fetchCharNames() {
+	console.log("Fetching character names");
+	$("#load-text").text("Loading character names...");
+	
+	var list = [];
+	
+	if (pilotStats) {
+		pilotStats.forEach(function(key) {
+			if (!list.includes(key.id))
+				list.push(key.id);
+		});
+	}
+	
+	var url = "https://esi.tech.ccp.is/latest/universe/names/?datasource=tranquility";
+	var fetch = new XMLHttpRequest();
+	fetch.onload = parseCharacters;
+	fetch.onerror = reqerror;
+	fetch.open('post', url, true);
+	fetch.setRequestHeader('Content-Type','application/json');
+	fetch.setRequestHeader('accept','application/json');
+	fetch.send(JSON.stringify(list));
+}
+
+function parseCharacters() {
+	var data = JSON.parse(this.responseText);
+	
+	if (data.error) {
+		esiError(data.error);
+		$("#load-text").text("Error loading character names...");
+	} else {
+		data.forEach(function(key) {
+			if (pilotStats) {
+				var cha = pilotStats.filter(e => e.id == (key.id+""))[0];
+				if (cha) {
+					cha.name = key.name;
+				}
+			}
+		});
+		
+		$("#load-text").text("Character names loaded...");
+		console.log("Character fetch is done");
 		pullStats();
 	}
 }
@@ -419,7 +463,10 @@ function pullStats() {
 	$('#TeamB').find('#value').text(totalValues[1].toLocaleString(undefined, {maximumFractionDigits:2}));
 	
 	// Set pilot stats
-	
+	//var pilotTable = "<tr><th colspan=\"2\" style=\"text-align:center\">Overall</th></tr>";
+	//pilotTable += "<tr><th style=\"text-align:center\">Pilot</th><th style=\"text-align:center\">Kills</th></tr>";
+	var pilotTable = sortPilotKills();
+	$('#pilotKills').append(pilotTable);
 	
 	// Set system names
 	var aTeamSystems = "<tr><th style=\"text-align:center\">System name</th><th style=\"text-align:center\">Kills</th></tr>";
@@ -437,7 +484,7 @@ function pullStats() {
 	
 	var systemKillTable = "<tr><th style=\"text-align:center\">Team A Kills</th><th style=\"text-align:center\">System name</th><th style=\"text-align:center\">Team B Kills</th></tr>";
 	Object.values(systemKills).forEach(function(v) {
-		systemKillTable += "<tr><td>" + ((v.a) ? v.a : "---") + "</td><td>" + v.name + "</td><td>" + ((v.b) ? v.b : "---") + "</td></tr>";
+		systemKillTable += "<tr><td>" + ((v.a) ? v.a : "-----") + "</td><td>" + v.name + "</td><td>" + ((v.b) ? v.b : "-----") + "</td></tr>";
 	});
 	$('#systemKills').append(systemKillTable);
 	
@@ -448,6 +495,41 @@ function pullStats() {
 		$('#loading-page').hide(2000);
 		$('#campaign-page').show(2000);
 	}, 1000);
+}
+
+function sortPilotKills() {
+	console.log(pilotStats);
+	console.log(allIDs.count);
+	pilotStats.sort(by('kills', true));
+	
+	// Start fetching character names while we fuck with sorting arrays
+	
+	
+	// We need n+1 arrays, where n = number of id original searched for, and +1 is the "overall" array
+	var pilotTable;
+	for (var i = -1; i < Object.keys(allIDs).length; i++) {
+		if (i == -1) {
+			console.log(-1);
+			pilotTable = "<tr><th colspan=\"2\" style=\"text-align:center\">Top 10 pilots overall</th></tr>";
+			pilotTable += "<tr><th style=\"text-align:center\">Pilot</th><th style=\"text-align:center\">Kills</th></tr>";
+			for (var j = 0; j < 10; j++) {
+				pilotTable += "<tr><td style=\"text-align:center\">"+pilotStats[j].name+"</td><td style=\"text-align:center\">"+pilotStats[j].kills+"</td></tr>";
+			}
+			pilotTable +=	"<tr><th colspan=\"2\" style=\"text-align:center\">&nbsp;</th></tr>"+
+							"<tr><th colspan=\"2\" style=\"text-align:center\">Top 10 pilots by group</th></tr>";
+		} else {
+			var id = Object.keys(allIDs)[i];
+			var killsForGroup = pilotStats.filter(x => x.group == id);
+			pilotTable += "<tr><th colspan=\"2\" style=\"text-align:center\">"+capitalizeFirstLetter(allIDs[id].type)+" - "+allIDs[id].name+"</th></tr>";
+			pilotTable += "<tr><th style=\"text-align:center\">Pilot</th><th style=\"text-align:center\">Kills</th></tr>";
+			for (var j = 0; j < 10; j++) {
+				pilotTable += "<tr><td style=\"text-align:center\">"+killsForGroup[j].name+"</td><td style=\"text-align:center\">"+killsForGroup[j].kills+"</td></tr>";
+			}
+			pilotTable += "<tr><th colspan=\"2\" style=\"text-align:center\">&nbsp;</th></tr>";
+		}
+	}
+	
+	return pilotTable;
 }
 
 function dateChange(elem, target, attribute) {
@@ -593,3 +675,8 @@ function parseSearch(variable) {
     }
     console.log('Query variable %s not found', variable);
 }
+
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
