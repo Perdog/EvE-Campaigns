@@ -186,6 +186,9 @@ function parseTeamNames() {
 		$("#load-text").text("Names found...");
 		myConsoleLog.post("Names found...");
 		
+		$("#load-text").text("Fetching killmails...");
+		myConsoleLog.post("Fetching killmails...");
+		
 		for (var i = 0; i < data.length; i++) {
 			var temp = {};
 			temp.name = data[i].name;
@@ -199,9 +202,6 @@ function parseTeamNames() {
 				fetchKillMails(data[i].id);
 			}
 		}
-		$("#load-text").text("Fetching killmails...");
-		myConsoleLog.post("Fetching killmails...");
-		
 	}
 }
 
