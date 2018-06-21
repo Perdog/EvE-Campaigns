@@ -195,49 +195,6 @@
 					</div>
 				</div>
 				
-				<!--
-				<div class="column" id="TeamA">
-					<h2 style="text-align:center"><u>Team A</u></h2>
-					<br />
-					<pre id="names" style="text-align:left"></pre>
-					<br />
-					<div class="row" id="statsKills">
-						<div class="column">
-							<a>Total kills</a>
-							<br />
-							<a>Total value</a>
-						</div>
-						<div class="column">
-							<a id="kills">0</a>
-							<br />
-							<a id="value">0</a>
-						</div>
-					</div>
-					<br />
-				</div>
-				
-				<div class="sidebar" id="middlespacer"></div>
-				
-				<div class="column" id="TeamB">
-					<h2 style="text-align:center"><u>Team B</u></h2>
-					<br />
-					<pre id="names" style="text-align:left"></pre>
-					<br />
-					<div class="row" id="statsKills">
-						<div class="column">
-							<a>Total kills</a>
-							<br />
-							<a>Total value</a>
-						</div>
-						<div class="column">
-							<a id="kills">0</a>
-							<br />
-							<a id="value">0</a>
-						</div>
-					</div>
-					<br />
-				</div>
-				-->
 				<div class="sidebar" id="rightspacer"></div>
 			</div>
 			<br />
@@ -305,52 +262,67 @@
 		</div>
 	</div>
 	<div id="default-page" class="dynamic-content">
-		<h1 style="text-align:center" class="jumbotron">
-			EvE Campaigns
-			<br />
-			<small>Out-of-Game war reports. Battle report generator between teams across large periods of time.</small>
-			<br />
-		</h1>
-		<p style="text-align:center">Type the full names of corps or alliances on either team, then add a date that you want to search. When you hit submit, the webpage will scream at you if you got a name wrong.</p>
-		<form id="campaign-form">
-			<div class="row">
-				<div class="sidebar"></div>
-				<div class="column" id="teamA">
-					<div class="form-group" style="text-align:center">
-						<h3>Team A</h3>
-						<input type="button" class="form-control" value="Add textbox" onclick="addField(this)">
-						<input type="text" class="form-control searchbox A" placeholder="Enter corp or alliance name" id="searchbox" required="required">
+	
+		<div class="row">
+			
+			<div class="sidebar"></div>
+			
+			<div class="center-content">
+				<div class="row">
+					<div class="column">
+						<h2 style="text-align:center" class="jumbotron">
+							EvE Campaigns
+							<br />
+							<small>Out-of-Game war reports. Battle report generator between teams across large periods of time.</small>
+							<br />
+						</h2>
+					</div>
+					
+					<p style="text-align:center">Type the full names of corps or alliances on either team, then add a date that you want to search. When you hit submit, the webpage will scream at you if you got a name wrong.</p>
+					
+				</div>
+				
+				<form id="campaign-form">
+				<div class="row">
+					
+					<div class="column" id="teamA">
+						<div class="form-group" style="text-align:center">
+							<h3>Team A</h3>
+							<input type="button" class="form-control" value="Add textbox" onclick="addField(this)">
+							<input type="text" class="form-control searchbox A" placeholder="Enter corp or alliance name" id="searchbox" required="required">
+						</div>
+					</div>
+					<div class="sidebar"></div>
+					<div class="column" id="teamB">
+						<div class="form-group" style="text-align:center">
+							<h3>Team B</h3>
+							<input type="button" class="form-control" value="Add textbox" onclick="addField(this)">
+							<input type="text" class="form-control searchbox B" placeholder="Enter corp or alliance name" id="searchbox" required="required">
+						</div>
 					</div>
 				</div>
-				<div class="sidebar"></div>
-				<div class="column" id="teamB">
-					<div class="form-group" style="text-align:center">
-						<h3>Team B</h3>
-						<input type="button" class="form-control" value="Add textbox" onclick="addField(this)">
-						<input type="text" class="form-control searchbox B" placeholder="Enter corp or alliance name" id="searchbox" required="required">
+				<br />
+				<div class="row">
+					<div class="column">
+						<p>Enter a start date</p>
+						<input type="date" id="startDate" min="2010-01-01" onchange="dateChange(this, '#endDate', 'min')" required>
+					</div>
+					<div class="sidebar"></div>
+					<div class="column">
+						<p>Enter an end date</p>
+						<input type="date" id="endDate" min="2010-01-01" onchange="dateChange(this, '#startDate', 'max')" required>
 					</div>
 				</div>
-				<div class="sidebar"></div>
-			</div>
-			<br />
-			<div class="row">
-				<div class="sidebar"></div>
-				<div class="column">
-					<p>Enter a start date</p>
-					<input type="date" id="startDate" min="2010-01-01" onchange="dateChange(this, '#endDate', 'min')" required>
+				<br />
+				<div style="text-align:center">
+					<input type="submit" value="Create Campaign" id="createCampaign">
 				</div>
-				<div class="sidebar"></div>
-				<div class="column">
-					<p>Enter an end date</p>
-					<input type="date" id="endDate" min="2010-01-01" onchange="dateChange(this, '#startDate', 'max')" required>
-				</div>
-				<div class="sidebar"></div>
+				</form>
 			</div>
-			<br />
-			<div style="text-align:center">
-				<input type="submit" value="Create Campaign" id="createCampaign">
-			</div>
-		</form>
+			
+			<div class="sidebar"></div>
+			
+		</div>
 	</div>
 	
 	<script>
