@@ -551,26 +551,26 @@ function pullStats() {
 		if (aIDs.includes(key))
 			aTeamNames +=
 			"<img src=\"https://image.eveonline.com/" + allIDs[key].type + "/" + key + "_64.png\" />"
-			+ "  " + allIDs[key].name + "\n";
+			+ "  " + allIDs[key].name + "\n<hr>";
 		else if (bIDs.includes(key))
 			bTeamNames +=
 			"<img src=\"https://image.eveonline.com/" + allIDs[key].type + "/" + key + "_64.png\" />"
-			+ "  " + allIDs[key].name + "\n";
+			+ "  " + allIDs[key].name + "\n<hr>";
 	});
+	aTeamNames = aTeamNames.substring(0, aTeamNames.length-4);
+	bTeamNames = bTeamNames.substring(0, bTeamNames.length-4);
 	$('#TeamA').find('#names').append(aTeamNames);
 	$('#TeamB').find('#names').append(bTeamNames);
 	
 	// Replace kill count
-	$('#TeamA').find('#kills').text(totalKills[0].toLocaleString(undefined, {maximumFractionDigits:2}));
-	$('#TeamB').find('#kills').text(totalKills[1].toLocaleString(undefined, {maximumFractionDigits:2}));
+	$('#killStats-A').find('#kills').text(totalKills[0].toLocaleString(undefined, {maximumFractionDigits:2}));
+	$('#killStats-B').find('#kills').text(totalKills[1].toLocaleString(undefined, {maximumFractionDigits:2}));
 	
 	// Replace isk values
-	$('#TeamA').find('#value').text(totalValues[0].toLocaleString(undefined, {maximumFractionDigits:2}));
-	$('#TeamB').find('#value').text(totalValues[1].toLocaleString(undefined, {maximumFractionDigits:2}));
+	$('#killStats-A').find('#value').text(totalValues[0].toLocaleString(undefined, {maximumFractionDigits:2}));
+	$('#killStats-B').find('#value').text(totalValues[1].toLocaleString(undefined, {maximumFractionDigits:2}));
 	
 	// Set pilot stats
-	//var pilotTable = "<tr><th colspan=\"2\" style=\"text-align:center\">Overall</th></tr>";
-	//pilotTable += "<tr><th style=\"text-align:center\">Pilot</th><th style=\"text-align:center\">Kills</th></tr>";
 	var pilotTable = sortPilotKills();
 	$('#pilotKills').append(pilotTable);
 	
@@ -599,7 +599,7 @@ function pullStats() {
 		$("#load-text").text("Ready to go");
 		$('#loading-page').hide(2000);
 		$('#campaign-page').show(2000);
-	}, 1000);
+	}, 2000);
 }
 
 function sortPilotKills() {
