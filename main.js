@@ -23,6 +23,7 @@ var timer = 0;
 
 $(document).ready(function(){
 	// Check if we're trying to load some data or not.
+	serverStatus();
 	if (location.search) {
 		console.log("Bueno: " + location.search);
 		
@@ -140,8 +141,27 @@ function nameError(error) {
 	alert("Something went wrong when looking up name IDs: \n" + error);
 }
 
+function serverStatus() {
+	var fetch = new XMLHttpRequest();
+	fetch.onload = serverStatusLoad;
+	fetch.onerror = serverStatusError;
+	fetch.open('get', "https://esi.evetech.net/latest/status/?datasource=tranquility", true);
+	fetch.send();
+}
+
+function serverStatusLoad() {
+	var data = JSON.parse(this.responseText);
+	var isOn = data.players > 0;
+	$('#server-status').text("Server is " + (isOn ? "online" : "offline") + " --- Players online: " + data.players.toLocaleString());
+}
+
+function serverStatusError(err) {
+	$('#server-status').text("Error loading server status");
+}
+
 function getNames(list) {
 	$("#load-text").text("Loading group names...");
+	myConsoleLog.post("Loading group names...");
 	
 	timer = Date.now();
 	
@@ -161,8 +181,11 @@ function parseTeamNames() {
 	if (data.error) {
 		esiError(data.error);
 		$("#load-text").text("Failed to load team names...");
+		myConsoleLog.post("Failed to load team names...");
 	} else {
 		$("#load-text").text("Names found...");
+		myConsoleLog.post("Names found...");
+		
 		for (var i = 0; i < data.length; i++) {
 			var temp = {};
 			temp.name = data[i].name;
@@ -172,11 +195,13 @@ function parseTeamNames() {
 			fetching[data[i].id].page = 1;
 			fetching[data[i].id].waiting = 0;
 			fetching[data[i].id].keepGoing = true;
-			for (var j = 0; j < 10; j++) {
+			for (var j = 0; j < 2; j++) {
 				fetchKillMails(data[i].id);
 			}
 		}
 		$("#load-text").text("Fetching killmails...");
+		myConsoleLog.post("Fetching killmails...");
+		
 	}
 }
 
@@ -184,6 +209,8 @@ function fetchKillMails(id) {
 	var pn = fetching[id].page;
 	fetching[id].page++;
 	console.log("Trying to fetch kills. Page " + pn + " for " + id);
+	myConsoleLog.post("Trying to fetch kills. Page " + pn + " for " + allIDs[id].name);
+	
 	
 	var base = "https://zkillboard.com/api/losses/";
 	var alli = "allianceID/";
@@ -317,6 +344,8 @@ function reqsuc() {
 		console.log("Final being called from: " + allIDs[id].name + "\nPage:" + fetching[id].page);
 		setTimeout(doneFetchingKills(), 1000);
 		$("#load-text").text("All possible kills found...");
+		myConsoleLog.post("All possible kills found...");
+		
 		return;
 	} else if (fetching[id].keepGoing) {
 		setTimeout(fetchKillMails(id), 100);
@@ -325,7 +354,9 @@ function reqsuc() {
 
 function reqerror(error) {
 	console.log("Oh no! Something's wrong!\n" + error);
-	$("#load-text").text("Something bad happened somewhere...\n" + error);
+	$("#load-text").text("Something bad happened somewhere...\n%s", error);
+	myConsoleLog.post("Something bad happened! Check the dev console for more info.");
+	
 }
 
 function doneFetchingKills() {
@@ -342,12 +373,16 @@ function doneFetchingKills() {
 	} else {
 		$("#load-static").text("No kills were found for this campaign. Git gud.");
 		$("#load-text").text("");
+		myConsoleLog.post("No kills found in this campaign...");
+		
 		pullStats();
 	}
 }
 
 function loadSystemNames() {
 	console.log("Fetching system names");
+	myConsoleLog.post("Loading system names...");
+	
 	$("#load-text").text("Loading system names...");
 	
 	var list = [];
@@ -375,6 +410,8 @@ function parseSystems() {
 	if (data.error) {
 		esiError(data.error);
 		$("#load-text").text("Error loading system names...");
+		myConsoleLog.post("Error loading system names...");
+		
 	} else {
 		data.forEach(function(key) {
 			if (systemKills) {
@@ -385,6 +422,8 @@ function parseSystems() {
 		});
 		
 		$("#load-text").text("System names loaded...");
+		myConsoleLog.post("System names loaded...");
+		
 		console.log("System fetch is done");
 		loadShipNames();
 	}
@@ -393,6 +432,8 @@ function parseSystems() {
 function loadShipNames() {
 	console.log("Fetching ship names");
 	$("#load-text").text("Loading ship names...");
+	myConsoleLog.post("Loading ship names...");
+	
 	
 	var list = [];
 	
@@ -419,6 +460,8 @@ function parseShips() {
 	if (data.error) {
 		esiError(data.error);
 		$("#load-text").text("Error loading ship names...");
+		myConsoleLog.post("Error loading ship names...");
+		
 	} else {
 		data.forEach(function(key) {
 			if (shipKills) {
@@ -429,6 +472,8 @@ function parseShips() {
 		});
 		
 		$("#load-text").text("Ship names loaded...");
+		myConsoleLog.post("Ship names loaded...");
+		
 		console.log("Ship fetch is done");
 		fetchCharNames();
 	}
@@ -437,6 +482,8 @@ function parseShips() {
 function fetchCharNames() {
 	console.log("Fetching character names");
 	$("#load-text").text("Loading character names...");
+	myConsoleLog.post("Loading character names...");
+	
 	
 	var list = [];
 	
@@ -463,6 +510,8 @@ function parseCharacters() {
 	if (data.error) {
 		esiError(data.error);
 		$("#load-text").text("Error loading character names...");
+		myConsoleLog.post("Error loading character names...");
+		
 	} else {
 		data.forEach(function(key) {
 			if (pilotStats) {
@@ -474,6 +523,8 @@ function parseCharacters() {
 		});
 		
 		$("#load-text").text("Character names loaded...");
+		myConsoleLog.post("Character names loaded...");
+		
 		console.log("Character fetch is done");
 		pullStats();
 	}
@@ -481,6 +532,8 @@ function parseCharacters() {
 
 function pullStats() {
 	$("#load-text").text("Parsing all this info...");
+	myConsoleLog.post("Parsing all this info...");
+	
 	console.log("Loading everything onto the page");
 	
 	// TODO At some point, add something to actually display kills
@@ -540,6 +593,8 @@ function pullStats() {
 	
 	// Done. Show the page.
 	console.log("Done");
+	myConsoleLog.post("Done!");
+	
 	setTimeout(function() {
 		$("#load-text").text("Ready to go");
 		$('#loading-page').hide(2000);
@@ -723,4 +778,41 @@ function parseSearch(variable) {
 function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
+
+// Scroll thing that may or may not work???
+var chatscroll = new Object();
+chatscroll.Pane = 
+    function(scrollContainerId)
+    {
+        this.bottomThreshold = 65;
+        this.scrollContainerId = scrollContainerId;
+    }
+
+chatscroll.Pane.prototype.activeScroll = 
+    function()
+    {
+        var scrollDiv = document.getElementById(this.scrollContainerId);
+        var currentHeight = 0;
+        
+        if (scrollDiv.scrollHeight > 0)
+            currentHeight = scrollDiv.scrollHeight;
+        else 
+            if (objDiv.offsetHeight > 0)
+                currentHeight = scrollDiv.offsetHeight;
+
+        if (currentHeight - scrollDiv.scrollTop - ((scrollDiv.style.pixelHeight) ? scrollDiv.style.pixelHeight : scrollDiv.offsetHeight) < this.bottomThreshold)
+            scrollDiv.scrollTop = currentHeight;
+
+        scrollDiv = null;
+    }
+
+chatscroll.Pane.prototype.post =
+	function(message)
+	{
+        var scrollDiv = document.getElementById(this.scrollContainerId);
+		scrollDiv.append(message + "\n");
+		this.activeScroll();
+	}
+
+var myConsoleLog = new chatscroll.Pane('page-console');
 
