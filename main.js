@@ -16,11 +16,14 @@ var totalKills = [0,0];
 var totalValues = [0,0];
 var systems = [];
 var systemKills = {};
+var shipKills = {};
+var pilotStats = [];
 var mailIDs = [];
 var timer = 0;
 
 $(document).ready(function(){
 	// Check if we're trying to load some data or not.
+	serverStatus();
 	if (location.search) {
 		console.log("Bueno: " + location.search);
 		
@@ -138,8 +141,27 @@ function nameError(error) {
 	alert("Something went wrong when looking up name IDs: \n" + error);
 }
 
+function serverStatus() {
+	var fetch = new XMLHttpRequest();
+	fetch.onload = serverStatusLoad;
+	fetch.onerror = serverStatusError;
+	fetch.open('get', "https://esi.evetech.net/latest/status/?datasource=tranquility", true);
+	fetch.send();
+}
+
+function serverStatusLoad() {
+	var data = JSON.parse(this.responseText);
+	var isOn = data.players > 0;
+	$('#server-status').text("Server is " + (isOn ? "online" : "offline") + " --- Players online: " + data.players.toLocaleString());
+}
+
+function serverStatusError(err) {
+	$('#server-status').text("Error loading server status");
+}
+
 function getNames(list) {
-	$("#load-text").text("Attempting to load team names...");
+	$("#load-text").text("Loading group names...");
+	myConsoleLog.post("Loading group names...");
 	
 	timer = Date.now();
 	
@@ -159,8 +181,14 @@ function parseTeamNames() {
 	if (data.error) {
 		esiError(data.error);
 		$("#load-text").text("Failed to load team names...");
+		myConsoleLog.post("Failed to load team names...");
 	} else {
 		$("#load-text").text("Names found...");
+		myConsoleLog.post("Names found...");
+		
+		$("#load-text").text("Fetching killmails...");
+		myConsoleLog.post("Fetching killmails...");
+		
 		for (var i = 0; i < data.length; i++) {
 			var temp = {};
 			temp.name = data[i].name;
@@ -170,7 +198,7 @@ function parseTeamNames() {
 			fetching[data[i].id].page = 1;
 			fetching[data[i].id].waiting = 0;
 			fetching[data[i].id].keepGoing = true;
-			for (var j = 0; j < 10; j++) {
+			for (var j = 0; j < 2; j++) {
 				fetchKillMails(data[i].id);
 			}
 		}
@@ -181,8 +209,10 @@ function fetchKillMails(id) {
 	var pn = fetching[id].page;
 	fetching[id].page++;
 	console.log("Trying to fetch kills. Page " + pn + " for " + id);
+	myConsoleLog.post("Trying to fetch kills. Page " + pn + " for " + allIDs[id].name);
 	
-	var base = "https://zkillboard.com/api/kills/";
+	
+	var base = "https://zkillboard.com/api/losses/";
 	var alli = "allianceID/";
 	var corp = "corporationID/";
 	var sTime = "/startTime/";
@@ -254,11 +284,38 @@ function reqsuc() {
 				// Track total kills
 				totalKills[team] += 1;
 				
+				// Track pilot kills
+				for (var j = 0; j < data[i].attackers.length; j++) {
+					var attacker = data[i].attackers[j];
+					var attID = attacker.character_id;
+					var idSelected = ((allIDs.hasOwnProperty(attacker.alliance_id)) ? attacker.alliance_id : ((allIDs.hasOwnProperty(attacker.corporation_id)) ? attacker.corporation_id : ((allIDs.hasOwnProperty(attID)) ? attID : null)));
+					
+					if (idSelected) {
+						var pilot = pilotStats.filter(x => x.id == attID)[0];
+						if (!pilot) {
+							var temp = {};
+							temp.id = attID;
+							temp.kills = 1;
+							temp.group = idSelected;
+							pilotStats.push(temp);
+						} else {
+							pilot.kills++;
+						}
+					}
+				}
+				
 				// Track total kill values
 				totalValues[team] += data[i].zkb.totalValue;
 				
 				// Track kills per ship per team
-					// Topkeks that's gonna be fun
+				var shipID = data[i].victim.ship_type_id;
+				
+				if (!shipKills.hasOwnProperty(shipID))
+					shipKills[shipID] = {};
+				if (team == 0)
+					(shipKills[shipID].hasOwnProperty("a")) ? shipKills[shipID].a++ : shipKills[shipID].a = 1;
+				if (team == 1)
+					(shipKills[shipID].hasOwnProperty("b")) ? shipKills[shipID].b++ : shipKills[shipID].b = 1;
 				
 				// Track kills per system per team
 				var sysID = data[i].solar_system_id;
@@ -283,9 +340,12 @@ function reqsuc() {
 	var idLength = Object.keys(allIDs).length;
 	
 	if (totalFinished() == idLength && fetching[id].waiting == 0) {
-		console.log("Final being called from: %s:" + fetching[id].page + ":" + fetching[id].waiting + ":" + fetching[id].keepGoing, fetching[id]);
+		console.log(this.responseURL);
+		console.log("Final being called from: " + allIDs[id].name + "\nPage:" + fetching[id].page);
 		setTimeout(doneFetchingKills(), 1000);
 		$("#load-text").text("All possible kills found...");
+		myConsoleLog.post("All possible kills found...");
+		
 		return;
 	} else if (fetching[id].keepGoing) {
 		setTimeout(fetchKillMails(id), 100);
@@ -294,7 +354,9 @@ function reqsuc() {
 
 function reqerror(error) {
 	console.log("Oh no! Something's wrong!\n" + error);
-	$("#load-text").text("Something bad happened somewhere...\n" + error);
+	$("#load-text").text("Something bad happened somewhere...\n%s", error);
+	myConsoleLog.post("Something bad happened! Check the dev console for more info.");
+	
 }
 
 function doneFetchingKills() {
@@ -311,12 +373,16 @@ function doneFetchingKills() {
 	} else {
 		$("#load-static").text("No kills were found for this campaign. Git gud.");
 		$("#load-text").text("");
+		myConsoleLog.post("No kills found in this campaign...");
+		
 		pullStats();
 	}
 }
 
 function loadSystemNames() {
 	console.log("Fetching system names");
+	myConsoleLog.post("Loading system names...");
+	
 	$("#load-text").text("Loading system names...");
 	
 	var list = [];
@@ -344,6 +410,8 @@ function parseSystems() {
 	if (data.error) {
 		esiError(data.error);
 		$("#load-text").text("Error loading system names...");
+		myConsoleLog.post("Error loading system names...");
+		
 	} else {
 		data.forEach(function(key) {
 			if (systemKills) {
@@ -354,13 +422,118 @@ function parseSystems() {
 		});
 		
 		$("#load-text").text("System names loaded...");
-		console.log("Name fetch is done");
+		myConsoleLog.post("System names loaded...");
+		
+		console.log("System fetch is done");
+		loadShipNames();
+	}
+}
+
+function loadShipNames() {
+	console.log("Fetching ship names");
+	$("#load-text").text("Loading ship names...");
+	myConsoleLog.post("Loading ship names...");
+	
+	
+	var list = [];
+	
+	if (systemKills) {
+		Object.keys(shipKills).forEach(function(key) {
+			if (!list.includes(key))
+				list.push(key);
+		});
+	}
+	
+	var url = "https://esi.tech.ccp.is/latest/universe/names/?datasource=tranquility";
+	var fetch = new XMLHttpRequest();
+	fetch.onload = parseShips;
+	fetch.onerror = reqerror;
+	fetch.open('post', url, true);
+	fetch.setRequestHeader('Content-Type','application/json');
+	fetch.setRequestHeader('accept','application/json');
+	fetch.send(JSON.stringify(list));
+}
+
+function parseShips() {
+	var data = JSON.parse(this.responseText);
+	
+	if (data.error) {
+		esiError(data.error);
+		$("#load-text").text("Error loading ship names...");
+		myConsoleLog.post("Error loading ship names...");
+		
+	} else {
+		data.forEach(function(key) {
+			if (shipKills) {
+				if (Object.keys(shipKills).includes(key.id+"")) {
+					shipKills[key.id+""].name = key.name;
+				}
+			}
+		});
+		
+		$("#load-text").text("Ship names loaded...");
+		myConsoleLog.post("Ship names loaded...");
+		
+		console.log("Ship fetch is done");
+		fetchCharNames();
+	}
+}
+
+function fetchCharNames() {
+	console.log("Fetching character names");
+	$("#load-text").text("Loading character names...");
+	myConsoleLog.post("Loading character names...");
+	
+	
+	var list = [];
+	
+	if (pilotStats) {
+		pilotStats.forEach(function(key) {
+			if (!list.includes(key.id))
+				list.push(key.id);
+		});
+	}
+	
+	var url = "https://esi.tech.ccp.is/latest/universe/names/?datasource=tranquility";
+	var fetch = new XMLHttpRequest();
+	fetch.onload = parseCharacters;
+	fetch.onerror = reqerror;
+	fetch.open('post', url, true);
+	fetch.setRequestHeader('Content-Type','application/json');
+	fetch.setRequestHeader('accept','application/json');
+	fetch.send(JSON.stringify(list));
+}
+
+function parseCharacters() {
+	var data = JSON.parse(this.responseText);
+	
+	if (data.error) {
+		esiError(data.error);
+		$("#load-text").text("Error loading character names...");
+		myConsoleLog.post("Error loading character names...");
+		
+	} else {
+		data.forEach(function(key) {
+			if (pilotStats) {
+				var cha = pilotStats.filter(e => e.id == (key.id+""))[0];
+				if (cha) {
+					cha.name = key.name;
+				}
+			}
+		});
+		
+		$("#load-text").text("Character names loaded...");
+		myConsoleLog.post("Character names loaded...");
+		
+		console.log("Character fetch is done");
 		pullStats();
 	}
 }
 
 function pullStats() {
 	$("#load-text").text("Parsing all this info...");
+	myConsoleLog.post("Parsing all this info...");
+	
 	console.log("Loading everything onto the page");
 	
 	// TODO At some point, add something to actually display kills
@@ -378,50 +551,84 @@ function pullStats() {
 		if (aIDs.includes(key))
 			aTeamNames +=
 			"<img src=\"https://image.eveonline.com/" + allIDs[key].type + "/" + key + "_64.png\" />"
-			+ "  " + allIDs[key].name + "\n";
+			+ "  " + allIDs[key].name + "\n<br />";
 		else if (bIDs.includes(key))
 			bTeamNames +=
 			"<img src=\"https://image.eveonline.com/" + allIDs[key].type + "/" + key + "_64.png\" />"
-			+ "  " + allIDs[key].name + "\n";
+			+ "  " + allIDs[key].name + "\n<br />";
 	});
+	aTeamNames = aTeamNames.substring(0, aTeamNames.length-6);
+	bTeamNames = bTeamNames.substring(0, bTeamNames.length-6);
 	$('#TeamA').find('#names').append(aTeamNames);
 	$('#TeamB').find('#names').append(bTeamNames);
 	
 	// Replace kill count
-	$('#TeamA').find('#kills').text(totalKills[0].toLocaleString(undefined, {maximumFractionDigits:2}));
-	$('#TeamB').find('#kills').text(totalKills[1].toLocaleString(undefined, {maximumFractionDigits:2}));
+	$('#killStats-A').find('#kills').text(totalKills[0].toLocaleString(undefined, {maximumFractionDigits:2}));
+	$('#killStats-B').find('#kills').text(totalKills[1].toLocaleString(undefined, {maximumFractionDigits:2}));
 	
 	// Replace isk values
-	$('#TeamA').find('#value').text(totalValues[0].toLocaleString(undefined, {maximumFractionDigits:2}));
-	$('#TeamB').find('#value').text(totalValues[1].toLocaleString(undefined, {maximumFractionDigits:2}));
+	$('#killStats-A').find('#value').text(totalValues[0].toLocaleString(undefined, {maximumFractionDigits:2}));
+	$('#killStats-B').find('#value').text(totalValues[1].toLocaleString(undefined, {maximumFractionDigits:2}));
 	
-	// Set system names
-	var aTeamSystems = "<tr><th style=\"text-align:center\">System name</th><th style=\"text-align:center\">Kills</th></tr>";
-	var bTeamSystems = aTeamSystems;
-	for (var i = 0; i < systems.length; i++) {
-		if (systems[i]) {
-			Object.values(systems[i]).forEach(function(v) {
-				if (i == 0)
-					aTeamSystems += "<tr><td>" + v.name + "</td><td>" + v.kills.toLocaleString(undefined, {maximumFractionDigits:2}) + "</td></tr>";
-				else
-					bTeamSystems += "<tr><td>" + v.name + "</td><td>" + v.kills.toLocaleString(undefined, {maximumFractionDigits:2}) + "</td></tr>";
-			});
-		}
-	}
+	// Set pilot stats
+	var pilotTable = sortPilotKills();
+	$('#pilotKills').append(pilotTable);
 	
+	// Set ship table
+	var shipKillTable = "<tr><th style=\"text-align:center\">Team A Kills</th><th style=\"text-align:center\">Ship type</th><th style=\"text-align:center\">Team B Kills</th></tr>";
+	Object.values(shipKills).forEach(function(v) {
+		shipKillTable += "<tr><td>" + ((v.a) ? v.a : "-----") + "</td><td>" + v.name + "</td><td>" + ((v.b) ? v.b : "-----") + "</td></tr>";
+	});
+	$('#shipStats').append(shipKillTable);
+	sortTable("shipStats");
+	
+	// Set system table
 	var systemKillTable = "<tr><th style=\"text-align:center\">Team A Kills</th><th style=\"text-align:center\">System name</th><th style=\"text-align:center\">Team B Kills</th></tr>";
 	Object.values(systemKills).forEach(function(v) {
-		systemKillTable += "<tr><td>" + ((v.a) ? v.a : "---") + "</td><td>" + v.name + "</td><td>" + ((v.b) ? v.b : "---") + "</td></tr>";
+		systemKillTable += "<tr><td>" + ((v.a) ? v.a : "-----") + "</td><td>" + v.name + "</td><td>" + ((v.b) ? v.b : "-----") + "</td></tr>";
 	});
 	$('#systemKills').append(systemKillTable);
+	sortTable("systemKills");
 	
-	sortTable();
+	
+	// Done. Show the page.
 	console.log("Done");
+	myConsoleLog.post("Done!");
+	
 	setTimeout(function() {
 		$("#load-text").text("Ready to go");
 		$('#loading-page').hide(2000);
 		$('#campaign-page').show(2000);
-	}, 1000);
+	}, 2000);
+}
+
+function sortPilotKills() {
+	pilotStats.sort(by('kills', true));
+	
+	// We need n+1 arrays, where n = number of ids originally searched for, and +1 is the "overall" array
+	var pilotTable;
+	for (var i = -1; i < Object.keys(allIDs).length; i++) {
+		if (i == -1) {
+			pilotTable = "<tr><th colspan=\"2\" style=\"text-align:center\">Top 10 pilots overall</th></tr>";
+			pilotTable += "<tr><th style=\"text-align:center\">Pilot</th><th style=\"text-align:center\">Kills</th></tr>";
+			for (var j = 0; j < 10; j++) {
+				pilotTable += "<tr><td style=\"text-align:center\">"+pilotStats[j].name+"</td><td style=\"text-align:center\">"+pilotStats[j].kills+"</td></tr>";
+			}
+			pilotTable +=	"<tr><th colspan=\"2\" style=\"text-align:center\">&nbsp;</th></tr>"+
+							"<tr><th colspan=\"2\" style=\"text-align:center\">Top 10 pilots by group</th></tr>";
+		} else {
+			var id = Object.keys(allIDs)[i];
+			var killsForGroup = pilotStats.filter(x => x.group == id);
+			pilotTable += "<tr><th colspan=\"2\" style=\"text-align:center\">"+capitalizeFirstLetter(allIDs[id].type)+" - "+allIDs[id].name+"</th></tr>";
+			pilotTable += "<tr><th style=\"text-align:center\">Pilot</th><th style=\"text-align:center\">Kills</th></tr>";
+			for (var j = 0; j < 10; j++) {
+				pilotTable += "<tr><td style=\"text-align:center\">"+killsForGroup[j].name+"</td><td style=\"text-align:center\">"+killsForGroup[j].kills+"</td></tr>";
+			}
+			pilotTable += "<tr><th colspan=\"2\" style=\"text-align:center\">&nbsp;</th></tr>";
+		}
+	}
+	
+	return pilotTable;
 }
 
 function dateChange(elem, target, attribute) {
@@ -437,10 +644,10 @@ function addField(elem) {
 	elem.parentNode.appendChild(clone);
 }
 
-function sortTable() {
+function sortTable(tableName) {
 	var table, rows, switching, i, x1, x2, y1, y2, shouldSwitch;
 	
-	table = document.getElementById("systemKills");
+	table = document.getElementById(tableName);
 	switching = true;
 	/* Make a loop that will continue until
 	no switching has been done: */
@@ -567,3 +774,45 @@ function parseSearch(variable) {
     }
     console.log('Query variable %s not found', variable);
 }
+
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+// Scroll thing that may or may not work???
+var chatscroll = new Object();
+chatscroll.Pane = 
+    function(scrollContainerId)
+    {
+        this.bottomThreshold = 65;
+        this.scrollContainerId = scrollContainerId;
+    }
+
+chatscroll.Pane.prototype.activeScroll = 
+    function()
+    {
+        var scrollDiv = document.getElementById(this.scrollContainerId);
+        var currentHeight = 0;
+        
+        if (scrollDiv.scrollHeight > 0)
+            currentHeight = scrollDiv.scrollHeight;
+        else 
+            if (objDiv.offsetHeight > 0)
+                currentHeight = scrollDiv.offsetHeight;
+
+        if (currentHeight - scrollDiv.scrollTop - ((scrollDiv.style.pixelHeight) ? scrollDiv.style.pixelHeight : scrollDiv.offsetHeight) < this.bottomThreshold)
+            scrollDiv.scrollTop = currentHeight;
+
+        scrollDiv = null;
+    }
+
+chatscroll.Pane.prototype.post =
+	function(message)
+	{
+        var scrollDiv = document.getElementById(this.scrollContainerId);
+		scrollDiv.append(message + "\n");
+		this.activeScroll();
+	}
+
+var myConsoleLog = new chatscroll.Pane('page-console');
+
