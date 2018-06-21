@@ -551,14 +551,14 @@ function pullStats() {
 		if (aIDs.includes(key))
 			aTeamNames +=
 			"<img src=\"https://image.eveonline.com/" + allIDs[key].type + "/" + key + "_64.png\" />"
-			+ "  " + allIDs[key].name + "\n<hr>";
+			+ "  " + allIDs[key].name + "\n<br />";
 		else if (bIDs.includes(key))
 			bTeamNames +=
 			"<img src=\"https://image.eveonline.com/" + allIDs[key].type + "/" + key + "_64.png\" />"
-			+ "  " + allIDs[key].name + "\n<hr>";
+			+ "  " + allIDs[key].name + "\n<br />";
 	});
-	aTeamNames = aTeamNames.substring(0, aTeamNames.length-4);
-	bTeamNames = bTeamNames.substring(0, bTeamNames.length-4);
+	aTeamNames = aTeamNames.substring(0, aTeamNames.length-6);
+	bTeamNames = bTeamNames.substring(0, bTeamNames.length-6);
 	$('#TeamA').find('#names').append(aTeamNames);
 	$('#TeamB').find('#names').append(bTeamNames);
 	
