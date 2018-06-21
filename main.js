@@ -479,29 +479,33 @@ function parseShips() {
 	}
 }
 
+var charWait = 0;
 function fetchCharNames() {
 	console.log("Fetching character names");
 	$("#load-text").text("Loading character names...");
 	myConsoleLog.post("Loading character names...");
 	
-	
-	var list = [];
-	
-	if (pilotStats) {
-		pilotStats.forEach(function(key) {
-			if (!list.includes(key.id))
-				list.push(key.id);
-		});
+	for (var i = 0; i < Math.ceil(pilotStats.length/200); i++) {
+		var list = [];
+		charWait++;
+		
+		if (pilotStats) {
+			for (var j = 0+(i*200); j < 200+Math.min(pilotStats.length, i*200); j++) {
+				var key = pilotStats[j];
+				if (key && !list.includes(key.id))
+					list.push(key.id);
+			}
+		}
+		
+		var url = "https://esi.tech.ccp.is/latest/universe/names/?datasource=tranquility";
+		var fetch = new XMLHttpRequest();
+		fetch.onload = parseCharacters;
+		fetch.onerror = reqerror;
+		fetch.open('post', url, true);
+		fetch.setRequestHeader('Content-Type','application/json');
+		fetch.setRequestHeader('accept','application/json');
+		fetch.send(JSON.stringify(list));
 	}
-	
-	var url = "https://esi.tech.ccp.is/latest/universe/names/?datasource=tranquility";
-	var fetch = new XMLHttpRequest();
-	fetch.onload = parseCharacters;
-	fetch.onerror = reqerror;
-	fetch.open('post', url, true);
-	fetch.setRequestHeader('Content-Type','application/json');
-	fetch.setRequestHeader('accept','application/json');
-	fetch.send(JSON.stringify(list));
 }
 
 function parseCharacters() {
@@ -522,11 +526,14 @@ function parseCharacters() {
 			}
 		});
 		
-		$("#load-text").text("Character names loaded...");
-		myConsoleLog.post("Character names loaded...");
-		
-		console.log("Character fetch is done");
-		pullStats();
+		charWait--;
+		if (charWait == 0) {
+			$("#load-text").text("Character names loaded...");
+			myConsoleLog.post("Character names loaded...");
+			
+			console.log("Character fetch is done");
+			pullStats();
+		}
 	}
 }
 
