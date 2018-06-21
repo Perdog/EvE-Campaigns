@@ -140,7 +140,7 @@ function nameError(error) {
 }
 
 function getNames(list) {
-	$("#load-text").text("Attempting to load team names...");
+	$("#load-text").text("Loading group names...");
 	
 	timer = Date.now();
 	
@@ -175,6 +175,7 @@ function parseTeamNames() {
 				fetchKillMails(data[i].id);
 			}
 		}
+		$("#load-text").text("Fetching killmails...");
 	}
 }
 
@@ -376,7 +377,6 @@ function parseSystems() {
 		
 		$("#load-text").text("System names loaded...");
 		console.log("System fetch is done");
-		//pullStats();
 		fetchCharNames();
 	}
 }
@@ -469,26 +469,15 @@ function pullStats() {
 	$('#pilotKills').append(pilotTable);
 	
 	// Set system names
-	var aTeamSystems = "<tr><th style=\"text-align:center\">System name</th><th style=\"text-align:center\">Kills</th></tr>";
-	var bTeamSystems = aTeamSystems;
-	for (var i = 0; i < systems.length; i++) {
-		if (systems[i]) {
-			Object.values(systems[i]).forEach(function(v) {
-				if (i == 0)
-					aTeamSystems += "<tr><td>" + v.name + "</td><td>" + v.kills.toLocaleString(undefined, {maximumFractionDigits:2}) + "</td></tr>";
-				else
-					bTeamSystems += "<tr><td>" + v.name + "</td><td>" + v.kills.toLocaleString(undefined, {maximumFractionDigits:2}) + "</td></tr>";
-			});
-		}
-	}
-	
 	var systemKillTable = "<tr><th style=\"text-align:center\">Team A Kills</th><th style=\"text-align:center\">System name</th><th style=\"text-align:center\">Team B Kills</th></tr>";
 	Object.values(systemKills).forEach(function(v) {
 		systemKillTable += "<tr><td>" + ((v.a) ? v.a : "-----") + "</td><td>" + v.name + "</td><td>" + ((v.b) ? v.b : "-----") + "</td></tr>";
 	});
 	$('#systemKills').append(systemKillTable);
-	
 	sortTable();
+	
+	
+	// Done. Show the page.
 	console.log("Done");
 	setTimeout(function() {
 		$("#load-text").text("Ready to go");
@@ -498,18 +487,12 @@ function pullStats() {
 }
 
 function sortPilotKills() {
-	console.log(pilotStats);
-	console.log(allIDs.count);
 	pilotStats.sort(by('kills', true));
 	
-	// Start fetching character names while we fuck with sorting arrays
-	
-	
-	// We need n+1 arrays, where n = number of id original searched for, and +1 is the "overall" array
+	// We need n+1 arrays, where n = number of ids originally searched for, and +1 is the "overall" array
 	var pilotTable;
 	for (var i = -1; i < Object.keys(allIDs).length; i++) {
 		if (i == -1) {
-			console.log(-1);
 			pilotTable = "<tr><th colspan=\"2\" style=\"text-align:center\">Top 10 pilots overall</th></tr>";
 			pilotTable += "<tr><th style=\"text-align:center\">Pilot</th><th style=\"text-align:center\">Kills</th></tr>";
 			for (var j = 0; j < 10; j++) {
