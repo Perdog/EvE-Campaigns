@@ -8,6 +8,7 @@ function loadKillmails() {
 	});
 }
 
+var idToFetch = 0;
 function getKillsFromDB() {
 	$("#load-text").text("Fetching killmails... 0/0");
 	var startStamp = new Date(dates[0].substring(0, 4), Number(dates[0].substring(4,6))-1, dates[0].substring(6,8));
@@ -18,10 +19,10 @@ function getKillsFromDB() {
 	//*
 	for (var id in allIDs) {
 		waitingOnDBKills++;
-		killsDB.where("killmail_time", ">=", startStamp.toISOString())
-				.where("killmail_time", "<=", endStamp.toISOString())
-				.where("victim." + allIDs[id].type + "_id", "==", Number(id))
+		killsDB.where("victim." + allIDs[id].type + "_id", "==", Number(id))
 				.orderBy("killmail_time")
+				.where("killmail_time", ">=", startStamp.toISOString())
+				.where("killmail_time", "<=", endStamp.toISOString())
 				.get()
 				.then(function(snap){
 					if (!snap.empty) {
@@ -33,6 +34,7 @@ function getKillsFromDB() {
 					else {
 						
 					}
+					$("#load-text").text("Fetching killmails... 0/" + (dbKills.length + zkbKills.length));
 					waitingOnDBKills--;
 				})
 				.catch(function(err){
@@ -40,19 +42,20 @@ function getKillsFromDB() {
 				});
 	}
 	
+	idToFetch++;
 	awaitDBKills();
 	//*/
 }
 
 function awaitDBKills() {
 	if (waitingOnDBKills > 0) {
-		console.log("Waiting on DB for killmails");
-		setTimeout(awaitDBKills, 500);
+		console.log("Waiting on DB for killmails: " + waitingOnDBKills);
+		setTimeout(awaitDBKills, 1000);
 	}
 	// Needs to be changed to call fetchZKillMails()
 	else {
-		$("#load-text").text("Fetching killmails... 0/" + dbKills.length);
-		//doneFetchingKills();
+		$("#load-text").text("Fetching killmails... 0/" + (dbKills.length + zkbKills.length));
+		doneFetchingKills();
 	}
 }
 

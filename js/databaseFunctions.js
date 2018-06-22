@@ -1,7 +1,7 @@
 
+var newKillmail = 0;
 function uploadKillsToDB() {
 	var i = killUploadCount;
-	var newKillmail = 0;
 	if (i == zkbKills.length)
 		return;
 	killsDB.where("killmail_id", "==", zkbKills[i].killmail_id)
@@ -10,14 +10,14 @@ function uploadKillsToDB() {
 				if (snap.empty) {
 					killsDB.add(zkbKills[i])
 							.then(function(docRef){
-								console.log("Uploading killmails... " + i + "/" + zkbKills.length + "(New)");
+								//console.log("Uploading killmails... " + i + "/" + zkbKills.length + "(New)");
 								newKillmail++;
 							})
 							.catch(function(err){
 								console.error("Error adding killmail to DB: ", err);
 							});
 				} else {
-					console.log("Uploading killmails... " + i + "/" + zkbKills.length + "(Existed)");
+					//console.log("Uploading killmails... " + i + "/" + zkbKills.length + "(Existed)");
 				}
 				$("#load-text").text("Uploading killmails... " + (i+1) + "/" + zkbKills.length + "\n" + (Math.round((i/zkbKills.length)*100000)/1000) + "%");
 				var tempInt = ((i/zkbKills.length)*100);

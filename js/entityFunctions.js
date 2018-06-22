@@ -124,6 +124,12 @@ function fetchEntityNames() {
 		$("#load-text").text("Entity names loaded");
 		console.log("Entity fetch is done");
 		// Need proper kill fetch function
+		
+		var isTest = parseSearch("test");
+		if (isTest) {
+			getKillsFromDB();
+			return;
+		}
 		setTimeout(loadKillmails(), 1000);
 	}
 }
@@ -155,12 +161,12 @@ function parseTeamNames() {
 			$("#load-text").text("Entity names loaded");
 			console.log("Entity fetch is done");
 			// Need proper kill fetch function
-			setTimeout(loadKillmails(), 1000);
-		}
 		
-		if (isTest) {
-			getKillsFromDB();
-			return;
+			if (isTest) {
+				getKillsFromDB();
+				return;
+			}
+			setTimeout(loadKillmails(), 1000);
 		}
 	}
 }
