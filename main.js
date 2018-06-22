@@ -799,15 +799,15 @@ function abbreviateISK(isk) {
 	
 	temp = isk/1000000000000;
 	if (temp >= 1)
-		return temp.toLocaleString(undefined, {maximumFractionDigits:2}) + "T ISK";
+		return temp.toLocaleString(undefined, {maximumFractionDigits:1}) + "T ISK";
 	temp = isk/1000000000;
 	if (temp >= 1)
-		return temp.toLocaleString(undefined, {maximumFractionDigits:2}) + "B ISK";
+		return temp.toLocaleString(undefined, {maximumFractionDigits:1}) + "B ISK";
 	temp = isk/1000000;
 	if (temp >= 1)
-		return temp.toLocaleString(undefined, {maximumFractionDigits:2}) + "M ISK";
+		return temp.toLocaleString(undefined, {maximumFractionDigits:1}) + "M ISK";
 	
-	return isk.toLocaleString(undefined, {maximumFractionDigits:2}) + " ISK";
+	return isk.toLocaleString(undefined, {maximumFractionDigits:1}) + " ISK";
 }
 
 // Scroll thing that may or may not work???
