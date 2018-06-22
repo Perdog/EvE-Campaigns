@@ -346,9 +346,9 @@ function reqsuc() {
 	if (totalFinished() == idLength && fetching[id].waiting == 0) {
 		console.log(this.responseURL);
 		console.log("Final being called from: " + allIDs[id].name + "\nPage:" + fetching[id].page);
-		setTimeout(doneFetchingKills(), 1000);
 		$("#load-text").text("All possible kills found...");
-		myConsoleLog.post("All possible kills found...");
+		myConsoleLog.post("All possible kills found (" + allKills.length + ")...");
+		setTimeout(doneFetchingKills(), 1000);
 		
 		return;
 	} else if (fetching[id].keepGoing) {
@@ -385,7 +385,7 @@ function doneFetchingKills() {
 
 function loadSystemNames() {
 	console.log("Fetching system names");
-	myConsoleLog.post("Loading system names...");
+	myConsoleLog.post("Loading system names (" + Object.keys(systemKills).length + ")...");
 	
 	$("#load-text").text("Loading system names...");
 	
@@ -436,8 +436,7 @@ function parseSystems() {
 function loadShipNames() {
 	console.log("Fetching ship names");
 	$("#load-text").text("Loading ship names...");
-	myConsoleLog.post("Loading ship names...");
-	
+	myConsoleLog.post("Loading ship names (" + Object.keys(shipKills).length + ")...");
 	
 	var list = [];
 	
@@ -487,7 +486,7 @@ var charWait = 0;
 function fetchCharNames() {
 	console.log("Fetching character names");
 	$("#load-text").text("Loading character names...");
-	myConsoleLog.post("Loading character names...");
+	myConsoleLog.post("Loading character names (" + pilotStats.length + ")...");
 	
 	for (var i = 0; i < Math.ceil(pilotStats.length/200); i++) {
 		var list = [];
@@ -562,11 +561,11 @@ function pullStats() {
 		if (aIDs.includes(key))
 			aTeamNames +=
 			"<img src=\"https://image.eveonline.com/" + allIDs[key].type + "/" + key + "_64.png\" />"
-			+ "  " + allIDs[key].name + "\n<br />";
+			+ "  <a style=\"color:black\" target=\"_blank\" href=\"https://zkillboard.com/"+allIDs[key].type+"/"+key+"/\">" + allIDs[key].name + "</a>\n<br />";
 		else if (bIDs.includes(key))
 			bTeamNames +=
 			"<img src=\"https://image.eveonline.com/" + allIDs[key].type + "/" + key + "_64.png\" />"
-			+ "  " + allIDs[key].name + "\n<br />";
+			+ "  <a style=\"color:black\" target=\"_blank\" href=\"https://zkillboard.com/"+allIDs[key].type+"/"+key+"/\">" + allIDs[key].name + "</a>\n<br />";
 	});
 	aTeamNames = aTeamNames.substring(0, aTeamNames.length-6);
 	bTeamNames = bTeamNames.substring(0, bTeamNames.length-6);
@@ -585,22 +584,40 @@ function pullStats() {
 	var pilotTable = sortPilotKills();
 	$('#pilotKills').append(pilotTable);
 	
-	// Set ship table
-	var shipKillTable = "<tr><th style=\"text-align:center\">Team A Kills</th><th style=\"text-align:center\">Ship type</th><th style=\"text-align:center\">Team B Kills</th></tr>";
-	Object.values(shipKills).forEach(function(v) {
+	////////////////////
+	// Set ship table //
+	////////////////////
+	var shipKillTable = "<tr>" +
+							"<th style=\"text-align:center\">Team A Kills</th>" +
+							"<th style=\"text-align:center\">Ship type</th>" +
+							"<th style=\"text-align:center\">Team B Kills</th>" +
+						"</tr>";
+	Object.keys(shipKills).forEach(function(v) {
+		var o = shipKills[v];
 		shipKillTable += 	"<tr>" +
-							"<td>" + ((v.a) ? (v.a.toLocaleString()  + " (" + abbreviateISK(v.av) + ")") : "-----") + "</td>" +
-							"<td>" + v.name + "</td>" +
-							"<td>" + ((v.b) ? (v.b.toLocaleString()  + " (" + abbreviateISK(v.bv) + ")") : "-----") + "</td>" +
+								"<td>" + ((o.a) ? (o.a.toLocaleString()  + " (" + abbreviateISK(o.av) + ")") : "-----") + "</td>" +
+								"<td><a target=\"_blank\" href=\"https://zkillboard.com/item/" + v + "/\">" + o.name + "</a></td>" +
+								"<td>" + ((o.b) ? (o.b.toLocaleString()  + " (" + abbreviateISK(o.bv) + ")") : "-----") + "</td>" +
 							"</tr>";
 	});
 	$('#shipStats').append(shipKillTable);
 	sortTable("shipStats");
 	
-	// Set system table
-	var systemKillTable = "<tr><th style=\"text-align:center\">Team A Kills</th><th style=\"text-align:center\">System name</th><th style=\"text-align:center\">Team B Kills</th></tr>";
-	Object.values(systemKills).forEach(function(v) {
-		systemKillTable += "<tr><td>" + ((v.a) ? v.a : "-----") + "</td><td>" + v.name + "</td><td>" + ((v.b) ? v.b : "-----") + "</td></tr>";
+	//////////////////////
+	// Set system table //
+	//////////////////////
+	var systemKillTable = 	"<tr>" +
+								"<th style=\"text-align:center\">Team A Kills</th>" +
+								"<th style=\"text-align:center\">System name</th>" +
+								"<th style=\"text-align:center\">Team B Kills</th>" +
+							"</tr>";
+	Object.keys(systemKills).forEach(function(v) {
+		var o = systemKills[v];
+		systemKillTable += 	"<tr>" +
+								"<td>" + ((o.a) ? o.a.toLocaleString() : "-----") + "</td>" +
+								"<td><a target=\"_blank\" href=\"https://zkillboard.com/system/" + v + "/\">" + o.name + "</a></td>" +
+								"<td>" + ((o.b) ? o.b.toLocaleString() : "-----") + "</td>" +
+							"</tr>";
 	});
 	$('#systemKills').append(systemKillTable);
 	sortTable("systemKills");
@@ -627,7 +644,10 @@ function sortPilotKills() {
 			pilotTable = "<tr><th colspan=\"2\" style=\"text-align:center\">Top 10 pilots overall</th></tr>";
 			pilotTable += "<tr><th style=\"text-align:center\">Pilot</th><th style=\"text-align:center\">Kills</th></tr>";
 			for (var j = 0; j < Math.min(10, pilotStats.length); j++) {
-				pilotTable += "<tr><td style=\"text-align:center\">"+pilotStats[j].name+"</td><td style=\"text-align:center\">"+pilotStats[j].kills+"</td></tr>";
+				pilotTable += 	"<tr>" +
+									"<td style=\"text-align:center\"><a target=\"_blank\" href=\"https://zkillboard.com/character/" + pilotStats[j].id + "/\">"+pilotStats[j].name+"</a></td>" +
+									"<td style=\"text-align:center\">"+pilotStats[j].kills+"</td>" +
+								"</tr>";
 			}
 			pilotTable +=	"<tr><th colspan=\"2\" style=\"text-align:center\">&nbsp;</th></tr>"+
 							"<tr><th colspan=\"2\" style=\"text-align:center\">Top 10 pilots by group</th></tr>";
@@ -637,7 +657,10 @@ function sortPilotKills() {
 			pilotTable += "<tr><th colspan=\"2\" style=\"text-align:center\">"+capitalizeFirstLetter(allIDs[id].type)+" - "+allIDs[id].name+"</th></tr>";
 			pilotTable += "<tr><th style=\"text-align:center\">Pilot</th><th style=\"text-align:center\">Kills</th></tr>";
 			for (var j = 0; j < Math.min(10, killsForGroup.length); j++) {
-				pilotTable += "<tr><td style=\"text-align:center\">"+killsForGroup[j].name+"</td><td style=\"text-align:center\">"+killsForGroup[j].kills+"</td></tr>";
+				pilotTable += 	"<tr>" +
+									"<td style=\"text-align:center\"><a target=\"_blank\" href=\"https://zkillboard.com/character/" + killsForGroup[j].id + "/\">"+killsForGroup[j].name+"</a></td>" +
+									"<td style=\"text-align:center\">"+killsForGroup[j].kills+"</td>" +
+								"</tr>";
 			}
 			pilotTable += "<tr><th colspan=\"2\" style=\"text-align:center\">&nbsp;</th></tr>";
 		}
