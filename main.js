@@ -626,7 +626,7 @@ function sortPilotKills() {
 		if (i == -1) {
 			pilotTable = "<tr><th colspan=\"2\" style=\"text-align:center\">Top 10 pilots overall</th></tr>";
 			pilotTable += "<tr><th style=\"text-align:center\">Pilot</th><th style=\"text-align:center\">Kills</th></tr>";
-			for (var j = 0; j < Math.Min(10, pilotStats.length); j++) {
+			for (var j = 0; j < Math.min(10, pilotStats.length); j++) {
 				pilotTable += "<tr><td style=\"text-align:center\">"+pilotStats[j].name+"</td><td style=\"text-align:center\">"+pilotStats[j].kills+"</td></tr>";
 			}
 			pilotTable +=	"<tr><th colspan=\"2\" style=\"text-align:center\">&nbsp;</th></tr>"+
@@ -636,7 +636,7 @@ function sortPilotKills() {
 			var killsForGroup = pilotStats.filter(x => x.group == id);
 			pilotTable += "<tr><th colspan=\"2\" style=\"text-align:center\">"+capitalizeFirstLetter(allIDs[id].type)+" - "+allIDs[id].name+"</th></tr>";
 			pilotTable += "<tr><th style=\"text-align:center\">Pilot</th><th style=\"text-align:center\">Kills</th></tr>";
-			for (var j = 0; j < Math.Min(10, killsForGroup.length); j++) {
+			for (var j = 0; j < Math.min(10, killsForGroup.length); j++) {
 				pilotTable += "<tr><td style=\"text-align:center\">"+killsForGroup[j].name+"</td><td style=\"text-align:center\">"+killsForGroup[j].kills+"</td></tr>";
 			}
 			pilotTable += "<tr><th colspan=\"2\" style=\"text-align:center\">&nbsp;</th></tr>";
