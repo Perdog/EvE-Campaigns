@@ -308,14 +308,18 @@ function reqsuc() {
 				totalValues[team] += data[i].zkb.totalValue;
 				
 				// Track kills per ship per team
-				var shipID = data[i].victim.ship_type_id;
+				var shipID = victim.ship_type_id;
 				
 				if (!shipKills.hasOwnProperty(shipID))
 					shipKills[shipID] = {};
-				if (team == 0)
+				if (team == 0) {
 					(shipKills[shipID].hasOwnProperty("a")) ? shipKills[shipID].a++ : shipKills[shipID].a = 1;
-				if (team == 1)
+					(shipKills[shipID].hasOwnProperty("av")) ? shipKills[shipID].av += data[i].zkb.totalValue : shipKills[shipID].av = data[i].zkb.totalValue;
+				}
+				else if (team == 1) {
 					(shipKills[shipID].hasOwnProperty("b")) ? shipKills[shipID].b++ : shipKills[shipID].b = 1;
+					(shipKills[shipID].hasOwnProperty("bv")) ? shipKills[shipID].bv += data[i].zkb.totalValue : shipKills[shipID].bv = data[i].zkb.totalValue;
+				}
 				
 				// Track kills per system per team
 				var sysID = data[i].solar_system_id;
@@ -584,7 +588,11 @@ function pullStats() {
 	// Set ship table
 	var shipKillTable = "<tr><th style=\"text-align:center\">Team A Kills</th><th style=\"text-align:center\">Ship type</th><th style=\"text-align:center\">Team B Kills</th></tr>";
 	Object.values(shipKills).forEach(function(v) {
-		shipKillTable += "<tr><td>" + ((v.a) ? v.a : "-----") + "</td><td>" + v.name + "</td><td>" + ((v.b) ? v.b : "-----") + "</td></tr>";
+		shipKillTable += 	"<tr>" +
+							"<td>" + ((v.a) ? (v.a  + " (" + abbreviateISK(v.av) + ")") : "-----") + "</td>" +
+							"<td>" + v.name + "</td>" +
+							"<td>" + ((v.b) ? (v.b  + " (" + abbreviateISK(v.bv) + ")") : "-----") + "</td>" +
+							"</tr>";
 	});
 	$('#shipStats').append(shipKillTable);
 	sortTable("shipStats");
@@ -618,7 +626,7 @@ function sortPilotKills() {
 		if (i == -1) {
 			pilotTable = "<tr><th colspan=\"2\" style=\"text-align:center\">Top 10 pilots overall</th></tr>";
 			pilotTable += "<tr><th style=\"text-align:center\">Pilot</th><th style=\"text-align:center\">Kills</th></tr>";
-			for (var j = 0; j < 10; j++) {
+			for (var j = 0; j < Math.Min(10, pilotStats.length); j++) {
 				pilotTable += "<tr><td style=\"text-align:center\">"+pilotStats[j].name+"</td><td style=\"text-align:center\">"+pilotStats[j].kills+"</td></tr>";
 			}
 			pilotTable +=	"<tr><th colspan=\"2\" style=\"text-align:center\">&nbsp;</th></tr>"+
@@ -628,7 +636,7 @@ function sortPilotKills() {
 			var killsForGroup = pilotStats.filter(x => x.group == id);
 			pilotTable += "<tr><th colspan=\"2\" style=\"text-align:center\">"+capitalizeFirstLetter(allIDs[id].type)+" - "+allIDs[id].name+"</th></tr>";
 			pilotTable += "<tr><th style=\"text-align:center\">Pilot</th><th style=\"text-align:center\">Kills</th></tr>";
-			for (var j = 0; j < 10; j++) {
+			for (var j = 0; j < Math.Min(10, killsForGroup.length); j++) {
 				pilotTable += "<tr><td style=\"text-align:center\">"+killsForGroup[j].name+"</td><td style=\"text-align:center\">"+killsForGroup[j].kills+"</td></tr>";
 			}
 			pilotTable += "<tr><th colspan=\"2\" style=\"text-align:center\">&nbsp;</th></tr>";
@@ -784,6 +792,22 @@ function parseSearch(variable) {
 
 function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+function abbreviateISK(isk) {
+	var temp = 0;
+	
+	temp = isk/1000000000000;
+	if (temp >= 1)
+		return temp.toLocaleString(undefined, {maximumFractionDigits:2}) + "T ISK";
+	temp = isk/1000000000;
+	if (temp >= 1)
+		return temp.toLocaleString(undefined, {maximumFractionDigits:2}) + "B ISK";
+	temp = isk/1000000;
+	if (temp >= 1)
+		return temp.toLocaleString(undefined, {maximumFractionDigits:2}) + "M ISK";
+	
+	return isk.toLocaleString(undefined, {maximumFractionDigits:2}) + " ISK";
 }
 
 // Scroll thing that may or may not work???
