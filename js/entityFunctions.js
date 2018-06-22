@@ -123,6 +123,13 @@ function fetchEntityNames() {
 	} else {
 		$("#load-text").text("Entity names loaded");
 		console.log("Entity fetch is done");
+		
+		var isTest = parseSearch("test");
+		if (isTest) {
+			getKillsFromDB();
+			return;
+		}
+		
 		// Need proper kill fetch function
 		
 		var isTest = parseSearch("test");
