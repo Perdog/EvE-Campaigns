@@ -589,9 +589,9 @@ function pullStats() {
 	var shipKillTable = "<tr><th style=\"text-align:center\">Team A Kills</th><th style=\"text-align:center\">Ship type</th><th style=\"text-align:center\">Team B Kills</th></tr>";
 	Object.values(shipKills).forEach(function(v) {
 		shipKillTable += 	"<tr>" +
-							"<td>" + ((v.a) ? (v.a  + " (" + abbreviateISK(v.av) + ")") : "-----") + "</td>" +
+							"<td>" + ((v.a) ? (v.a.toLocaleString()  + " (" + abbreviateISK(v.av) + ")") : "-----") + "</td>" +
 							"<td>" + v.name + "</td>" +
-							"<td>" + ((v.b) ? (v.b  + " (" + abbreviateISK(v.bv) + ")") : "-----") + "</td>" +
+							"<td>" + ((v.b) ? (v.b.toLocaleString()  + " (" + abbreviateISK(v.bv) + ")") : "-----") + "</td>" +
 							"</tr>";
 	});
 	$('#shipStats').append(shipKillTable);
