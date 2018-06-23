@@ -336,10 +336,6 @@ function reqsuc() {
 	
 	// If this is the last fetch, and there was no data on the page, build the webpage
 	fetching[id].waiting--;
-		
-	var tempInt = 100 - ((fetching[id].waiting/maxWait)*100);
-	$('#load-progress').attr("value", tempInt);
-	
 	
 	var idLength = Object.keys(allIDs).length;
 	

@@ -34,6 +34,10 @@
 			color: black;
 		}
 		
+		button {
+			color:black;
+		}
+		
 		.dynamic-content {
 			display: none;
 		}
@@ -118,17 +122,18 @@
 	
 	<div id="page-header" class="row">
 		<div class="center-content">
-			<p id="server-status">Server status: Unknown    Players online: Unknown</p>
+			<p style="float:left" id="server-status">Server status: Unknown    Players online: Unknown</p>
+			
 			<!--<button href="/" style="float:right">Return to home page</button>-->
+			<a style="float:right" class="btn btn-default" href="/">Create new report</a>
+			<a style="float:right" class="btn btn-default" href="/">Create new report</a>
 		</div>
 	</div>
-	
+	<hr>
 	<div id="loading-page" class="dynamic-content">
 		<p id="load-static">Loading... this could take a few minutes, please be patient</p>
 		<p id="load-text"></p>
-		<!--<progress id="load-progress" value="0" max="100"></progress>-->
 		<textarea id="page-console" rows="8" cols="40" readonly></textarea>
-		<!--<div class="loader"></div>-->
 	</div>
 	<div id="campaign-page" class="dynamic-content">
 		<div id="statsHeader">
@@ -186,7 +191,7 @@
 								<div class="column">
 									<a>Total kills</a>
 									<br />
-									<a>Total value</a>
+									<a>ISK value</a>
 								</div>
 								<div class="column">
 									<a id="kills">0</a>
@@ -204,7 +209,7 @@
 								<div class="column">
 									<a>Total kills</a>
 									<br />
-									<a>Total value</a>
+									<a>ISK value</a>
 								</div>
 								<div class="column">
 									<a id="kills">0</a>
