@@ -596,7 +596,7 @@ function pullStats() {
 		var o = shipKills[v];
 		shipKillTable += 	"<tr>" +
 								"<td>" + ((o.a) ? (o.a.toLocaleString()  + " (" + abbreviateISK(o.av) + ")") : "-----") + "</td>" +
-								"<td><a target=\"_blank\" href=\"https://zkillboard.com/item/" + v + "/\">" + o.name + "</a></td>" +
+								"<td style=\"text-align:left\"><img src=\"https://image.eveonline.com/type/" + v + "_64.png\" />    <a target=\"_blank\" href=\"https://zkillboard.com/item/" + v + "/\">" + o.name + "</a></td>" +
 								"<td>" + ((o.b) ? (o.b.toLocaleString()  + " (" + abbreviateISK(o.bv) + ")") : "-----") + "</td>" +
 							"</tr>";
 	});
@@ -645,12 +645,11 @@ function sortPilotKills() {
 			pilotTable += "<tr><th style=\"text-align:center\">Pilot</th><th style=\"text-align:center\">Kills</th></tr>";
 			for (var j = 0; j < Math.min(10, pilotStats.length); j++) {
 				pilotTable += 	"<tr>" +
-									"<td style=\"text-align:center\"><a target=\"_blank\" href=\"https://zkillboard.com/character/" + pilotStats[j].id + "/\">"+pilotStats[j].name+"</a></td>" +
+									"<td style=\"text-align:left\"><img src=\"https://image.eveonline.com/character/" + pilotStats[j].id + "_64.jpg\" />    <a target=\"_blank\" href=\"https://zkillboard.com/character/" + pilotStats[j].id + "/\">"+pilotStats[j].name+"</a> (" + allIDs[pilotStats[j].group].name + ")</td>" +
 									"<td style=\"text-align:center\">"+pilotStats[j].kills+"</td>" +
 								"</tr>";
 			}
-			pilotTable +=	"<tr><th colspan=\"2\" style=\"text-align:center\">&nbsp;</th></tr>"+
-							"<tr><th colspan=\"2\" style=\"text-align:center\">Top 10 pilots by group</th></tr>";
+			pilotTable += "<tr><th colspan=\"2\" style=\"text-align:center\">Top 10 pilots by group</th></tr>";
 		} else {
 			var id = Object.keys(allIDs)[i];
 			var killsForGroup = pilotStats.filter(x => x.group == id);
@@ -658,11 +657,10 @@ function sortPilotKills() {
 			pilotTable += "<tr><th style=\"text-align:center\">Pilot</th><th style=\"text-align:center\">Kills</th></tr>";
 			for (var j = 0; j < Math.min(10, killsForGroup.length); j++) {
 				pilotTable += 	"<tr>" +
-									"<td style=\"text-align:center\"><a target=\"_blank\" href=\"https://zkillboard.com/character/" + killsForGroup[j].id + "/\">"+killsForGroup[j].name+"</a></td>" +
+									"<td style=\"text-align:left\"><img src=\"https://image.eveonline.com/character/" + killsForGroup[j].id + "_32.jpg\" />    <a target=\"_blank\" href=\"https://zkillboard.com/character/" + killsForGroup[j].id + "/\">"+killsForGroup[j].name+"</a></td>" +
 									"<td style=\"text-align:center\">"+killsForGroup[j].kills+"</td>" +
 								"</tr>";
 			}
-			pilotTable += "<tr><th colspan=\"2\" style=\"text-align:center\">&nbsp;</th></tr>";
 		}
 	}
 	
