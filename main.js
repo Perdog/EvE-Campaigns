@@ -326,10 +326,14 @@ function reqsuc() {
 				
 				if (!systemKills.hasOwnProperty(sysID))
 					systemKills[sysID] = {};
-				if (team == 0)
+				if (team == 0) {
 					(systemKills[sysID].hasOwnProperty("a")) ? systemKills[sysID].a++ : systemKills[sysID].a = 1;
-				if (team == 1)
+					(systemKills[sysID].hasOwnProperty("av")) ? systemKills[sysID].av += data[i].zkb.totalValue : systemKills[sysID].av = data[i].zkb.totalValue;
+				}
+				if (team == 1) {
 					(systemKills[sysID].hasOwnProperty("b")) ? systemKills[sysID].b++ : systemKills[sysID].b = 1;
+					(systemKills[sysID].hasOwnProperty("bv")) ? systemKills[sysID].b += data[i].zkb.totalValue : systemKills[sysID].bv = data[i].zkb.totalValue;
+				}
 			}
 		}
 	}
@@ -610,9 +614,9 @@ function pullStats() {
 	Object.keys(systemKills).forEach(function(v) {
 		var o = systemKills[v];
 		systemKillTable += 	"<tr>" +
-								"<td>" + ((o.a) ? o.a.toLocaleString() : "-----") + "</td>" +
+								"<td>" + ((o.a) ? o.a.toLocaleString() + "  (" + abbreviateISK(o.av) + ")" : "-----") + "</td>" +
 								"<td><a target=\"_blank\" href=\"https://zkillboard.com/system/" + v + "/\">" + o.name + "</a></td>" +
-								"<td>" + ((o.b) ? o.b.toLocaleString() : "-----") + "</td>" +
+								"<td>" + ((o.b) ? o.b.toLocaleString() + "  (" + abbreviateISK(o.bv) + ")" : "-----") + "</td>" +
 							"</tr>";
 	});
 	$('#systemKills').append(systemKillTable);
