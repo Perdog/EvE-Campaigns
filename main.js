@@ -332,7 +332,7 @@ function reqsuc() {
 				}
 				if (team == 1) {
 					(systemKills[sysID].hasOwnProperty("b")) ? systemKills[sysID].b++ : systemKills[sysID].b = 1;
-					(systemKills[sysID].hasOwnProperty("bv")) ? systemKills[sysID].b += data[i].zkb.totalValue : systemKills[sysID].bv = data[i].zkb.totalValue;
+					(systemKills[sysID].hasOwnProperty("bv")) ? systemKills[sysID].bv += data[i].zkb.totalValue : systemKills[sysID].bv = data[i].zkb.totalValue;
 				}
 			}
 		}
