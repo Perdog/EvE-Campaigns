@@ -53,17 +53,17 @@ $(document).on('focus', '.searchbox:not(.ui-autocomplete-input)', function(e) {
 			var searchCat = "";
 			var categ = "alliance%2Ccharacter%2Ccorporation";
 			
+			if (term in autoCompleteCache) {
+				res(autoCompleteCache[term]);
+				return;
+			}
+			
 			if (powerSearch.length > 1) {
 				searchCat = powerSearch[0];
 				term = powerSearch[1];
 				categ = ((searchCat.toLowerCase() === "char" || searchCat.toLowerCase() === "character") ? "character" :
 						(searchCat.toLowerCase() === "corp" || searchCat.toLowerCase() === "corporation") ? "corporation" :
 						(searchCat.toLowerCase() === "alli" || searchCat.toLowerCase() === "alliance") ? "alliance" : "alliance%2Ccharacter%2Ccorporation");
-			}
-			
-			if (term in autoCompleteCache) {
-				res(autoCompleteCache[term]);
-				return;
 			}
 			
 			var url = 	"https://esi.evetech.net/latest/search/" +
