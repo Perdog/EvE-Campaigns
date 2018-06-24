@@ -11,6 +11,7 @@
 	<link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.18.1/vis.min.css" rel="stylesheet" type="text/css" />
 	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4" crossorigin="anonymous">
 	<link rel="stylesheet" href="./bootstrap.css">
+	<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
 	
 	<style>
 		table {
@@ -78,6 +79,19 @@
 			top: 50%;
 			left: 50%;
 			margin: -100px 0 0 -150px;
+		}
+		
+		.ui-autocomplete {
+			max-height: 200px;
+			overflow-y: auto;
+			overflow-x: hidden;
+		}
+		
+		.ui-autocomplete-category {
+			font-weight: bold;
+			padding: .2em .4em;
+			margin: .8em 0 .2em;
+			line-height: 1.5;
 		}
 		
 		/* Style the button that is used to open and close the collapsible content */
@@ -309,41 +323,45 @@
 					
 				</div>
 				
-				<form id="campaign-form">
-				<div class="row">
-					
-					<div class="column" id="teamA">
-						<div class="form-group" style="text-align:center">
-							<h3>Team A</h3>
-							<input type="button" class="form-control" value="Add group" onclick="addField(this)">
-							<input type="text" class="form-control searchbox A" placeholder="Enter corp or alliance name" id="searchbox" required="required">
+				<form autocomplete="off" id="campaign-form">
+					<div class="row">
+						
+						<div class="column" id="teamA">
+							<div class="form-group" style="text-align:center">
+								<h3>Team A</h3>
+								<input type="button" class="form-control" value="Add group" onclick="addField(this)">
+								<div class="ui-widget">
+									<input class="form-control searchbox A" placeholder="Enter corp or alliance name" id="searchbox" required="required">
+								</div>
+							</div>
+						</div>
+						<div class="sidebar"></div>
+						<div class="column" id="teamB">
+							<div class="form-group" style="text-align:center">
+								<h3>Team B</h3>
+								<input type="button" class="form-control" value="Add group" onclick="addField(this)">
+								<div class="ui-widget">
+									<input class="form-control searchbox B" placeholder="Enter corp or alliance name" id="searchbox" required="required">
+								</div>
+							</div>
 						</div>
 					</div>
-					<div class="sidebar"></div>
-					<div class="column" id="teamB">
-						<div class="form-group" style="text-align:center">
-							<h3>Team B</h3>
-							<input type="button" class="form-control" value="Add group" onclick="addField(this)">
-							<input type="text" class="form-control searchbox B" placeholder="Enter corp or alliance name" id="searchbox" required="required">
+					<br />
+					<div class="row">
+						<div class="column">
+							<p>Enter a start date</p>
+							<input type="date" id="startDate" min="2010-01-01" onchange="dateChange(this, '#endDate', 'min')" required>
+						</div>
+						<div class="sidebar"></div>
+						<div class="column">
+							<p>Enter an end date</p>
+							<input type="date" id="endDate" min="2010-01-01" onchange="dateChange(this, '#startDate', 'max')" required>
 						</div>
 					</div>
-				</div>
-				<br />
-				<div class="row">
-					<div class="column">
-						<p>Enter a start date</p>
-						<input type="date" id="startDate" min="2010-01-01" onchange="dateChange(this, '#endDate', 'min')" required>
+					<br />
+					<div style="text-align:center">
+						<input type="submit" value="Create Campaign" id="createCampaign">
 					</div>
-					<div class="sidebar"></div>
-					<div class="column">
-						<p>Enter an end date</p>
-						<input type="date" id="endDate" min="2010-01-01" onchange="dateChange(this, '#startDate', 'max')" required>
-					</div>
-				</div>
-				<br />
-				<div style="text-align:center">
-					<input type="submit" value="Create Campaign" id="createCampaign">
-				</div>
 				</form>
 			</div>
 			
@@ -371,7 +389,8 @@
 	
 	
 	<!-- Latest compiled and minified JQuery -->
-	<script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+	<script type="text/javascript" src="http://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+	<script type="text/javascript" src="http://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
 	<!-- Latest compiled and minified Bootstrap -->
 	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js" integrity="sha384-uefMccjFJAIv6A+rW+L4AHf99KvxDjWSu1z9VI8SKNVmz4sk7buKt/6v9KI65qnm" crossorigin="anonymous"></script>
 	<script type="text/javascript" src="main.js"></script>
