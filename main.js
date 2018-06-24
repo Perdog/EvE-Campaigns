@@ -92,7 +92,7 @@ $(document).on('focus', '.searchbox:not(.ui-autocomplete-input)', function(e) {
 						return (orderArray.indexOf(a.category) + 1) - (orderArray.indexOf(b.category) + 1);
 					});
 					
-					autoCompleteCache[term] = data2;
+					autoCompleteCache[req.term] = data2;
 					res(data2);
 				};
 				fetch.open('post', url2, true);
