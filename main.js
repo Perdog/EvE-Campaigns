@@ -20,10 +20,110 @@ var shipKills = {};
 var pilotStats = [];
 var mailIDs = [];
 var timer = 0;
+var autoCompleteCache = {};
+
+$.widget("custom.catcomplete", $.ui.autocomplete, {
+	_create: function() {
+		this._super();
+		this.widget().menu("option", "items", "> :not(.ui-autocomplete-category)");
+	},
+	_renderMenu: function(ul, items) {
+		var that = this, currentCategory = "";
+		$.each(items, function(index, item) {
+			var li;
+			if (item.category != currentCategory) {
+				ul.append("<li class='ui-autocomplete-category'>" + capitalizeFirstLetter(item.category + "s") + "</li>");
+				currentCategory = item.category;
+			}
+			li = that._renderItemData(ul, item);
+			if (item.category) {
+				li.attr("aria-label", item.category + ":" + item.name);
+			}
+		});
+	}
+});
+
+$(document).on('focus', '.searchbox:not(.ui-autocomplete-input)', function(e) {
+	$(this).catcomplete({
+		minLength: 5,
+		delay: 1000,
+		source: function(req, res) {
+			var term = req.term;
+			var powerSearch = term.split(":");
+			var searchCat = "";
+			var categ = "alliance%2Ccharacter%2Ccorporation";
+			
+			if (powerSearch.length > 1) {
+				searchCat = powerSearch[0];
+				term = powerSearch[1];
+				categ = ((searchCat.toLowerCase() === "char" || searchCat.toLowerCase() === "character") ? "character" :
+						(searchCat.toLowerCase() === "corp" || searchCat.toLowerCase() === "corporation") ? "corporation" :
+						(searchCat.toLowerCase() === "alli" || searchCat.toLowerCase() === "alliance") ? "alliance" : "alliance%2Ccharacter%2Ccorporation");
+			}
+			
+			if (term in autoCompleteCache) {
+				res(autoCompleteCache[term]);
+				return;
+			}
+			
+			var url = 	"https://esi.evetech.net/latest/search/" +
+						"?categories=" + categ +
+						"&datasource=tranquility&language=en-us&" +
+						"search=" + term +
+						"&strict=false";
+			
+			if (term === "")
+				return;
+			
+			$.getJSON(url, function(data, status, xhr) {
+				var tempListIDs = [];
+				
+				Object.keys(data).forEach(function(key) {
+					tempListIDs = tempListIDs.concat(data[key]);
+				});
+				
+				var url2 = "https://esi.tech.ccp.is/latest/universe/names/?datasource=tranquility";
+				var fetch = new XMLHttpRequest();
+				fetch.onload = function() {
+					var data2 = JSON.parse(this.responseText);
+					
+					var orderArray = ["character", "corporation", "alliance"];
+					data2.sort(function(a,b) {
+						return (orderArray.indexOf(a.category) + 1) - (orderArray.indexOf(b.category) + 1);
+					});
+					
+					autoCompleteCache[term] = data2;
+					res(data2);
+				};
+				fetch.open('post', url2, true);
+				fetch.setRequestHeader('Content-Type','application/json');
+				fetch.setRequestHeader('accept','application/json');
+				fetch.send(JSON.stringify(tempListIDs));
+			});
+		},
+		focus: function() {
+			return false;
+		},
+		select: function(event, ui) {
+			this.value = ui.item.name;
+			return false;
+		}
+	})
+	.catcomplete("instance")._renderItem = function(ul, item) {
+		return $("<li>")
+				.append("<div>" +
+						"<img src=\"https://image.eveonline.com/" + item.category + "/" + item.id + "_32." + (item.category == "character" ? "jpg" : "png") + "\" />" +
+						"    " +
+						item.name +
+						"</div>")
+				.appendTo(ul);
+	};
+});
 
 $(document).ready(function(){
-	// Check if we're trying to load some data or not.
 	serverStatus();
+	
+	// Check if we're trying to load some data or not.
 	if (location.search) {
 		console.log("Bueno: " + location.search);
 		
@@ -674,8 +774,9 @@ function dateChange(elem, target, attribute) {
 function addField(elem) {
 	var item = elem.parentElement.lastElementChild;
 	var clone = item.cloneNode(true);
-	clone.value = "";
-	clone.removeAttribute("required");
+	clone.lastElementChild.value = "";
+	clone.lastElementChild.removeAttribute("required");
+	clone.lastElementChild.classList.remove("ui-autocomplete-input");
 	
 	elem.parentNode.appendChild(clone);
 }
@@ -831,7 +932,7 @@ function abbreviateISK(isk) {
 	return isk.toLocaleString(undefined, {maximumFractionDigits:1}) + " ISK";
 }
 
-// Scroll thing that may or may not work???
+// Visible console log for user
 var chatscroll = new Object();
 chatscroll.Pane = 
     function(scrollContainerId)
