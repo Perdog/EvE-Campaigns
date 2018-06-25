@@ -31,7 +31,7 @@ $.widget("custom.catcomplete", $.ui.autocomplete, {
 		var that = this, currentCategory = "";
 		$.each(items, function(index, item) {
 			var li;
-			if (item.category != currentCategory) {
+			if (item.category && item.category != currentCategory) {
 				ul.append("<li class='ui-autocomplete-category'>" + capitalizeFirstLetter(item.category + "s") + "</li>");
 				currentCategory = item.category;
 			}
@@ -87,10 +87,14 @@ $(document).on('focus', '.searchbox:not(.ui-autocomplete-input)', function(e) {
 				fetch.onload = function() {
 					var data2 = JSON.parse(this.responseText);
 					
-					var orderArray = ["character", "corporation", "alliance"];
-					data2.sort(function(a,b) {
-						return (orderArray.indexOf(a.category) + 1) - (orderArray.indexOf(b.category) + 1);
-					});
+					if (data2.error) {
+						data2 = [{"name": "No matches found"}];
+					} else {
+						var orderArray = ["character", "corporation", "alliance"];
+						data2.sort(function(a,b) {
+							return (orderArray.indexOf(a.category) + 1) - (orderArray.indexOf(b.category) + 1);
+						});
+					}
 					
 					autoCompleteCache[req.term] = data2;
 					res(data2);
@@ -112,7 +116,7 @@ $(document).on('focus', '.searchbox:not(.ui-autocomplete-input)', function(e) {
 	.catcomplete("instance")._renderItem = function(ul, item) {
 		return $("<li>")
 				.append("<div>" +
-						"<img src=\"https://image.eveonline.com/" + item.category + "/" + item.id + "_32." + (item.category == "character" ? "jpg" : "png") + "\" />" +
+						(item.category ? "<img src=\"https://image.eveonline.com/" + item.category + "/" + item.id + "_32." + (item.category == "character" ? "jpg" : "png") + "\" />" : "") +
 						"    " +
 						item.name +
 						"</div>")
