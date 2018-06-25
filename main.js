@@ -684,6 +684,25 @@ function pullStats() {
 	$('#killStats-A').find('#value').text(totalValues[0].toLocaleString(undefined, {maximumFractionDigits:2}));
 	$('#killStats-B').find('#value').text(totalValues[1].toLocaleString(undefined, {maximumFractionDigits:2}));
 	
+	//////////////////////
+	// Set system table //
+	//////////////////////
+	var systemKillTable = 	"<tr>" +
+								"<th style=\"text-align:center\">Team A Kills</th>" +
+								"<th style=\"text-align:center\">System name</th>" +
+								"<th style=\"text-align:center\">Team B Kills</th>" +
+							"</tr>";
+	Object.keys(systemKills).forEach(function(v) {
+		var o = systemKills[v];
+		systemKillTable += 	"<tr>" +
+								"<td>" + ((o.a) ? o.a.toLocaleString() + "  (" + abbreviateISK(o.av) + ")" : "-----") + "</td>" +
+								"<td><a target=\"_blank\" href=\"https://zkillboard.com/system/" + v + "/\">" + o.name + "</a></td>" +
+								"<td>" + ((o.b) ? o.b.toLocaleString() + "  (" + abbreviateISK(o.bv) + ")" : "-----") + "</td>" +
+							"</tr>";
+	});
+	$('#systemKills').append(systemKillTable);
+	sortTable("systemKills");
+	
 	// Set pilot stats
 	var pilotTable = sortPilotKills();
 	$('#pilotKills').append(pilotTable);
@@ -706,25 +725,6 @@ function pullStats() {
 	});
 	$('#shipStats').append(shipKillTable);
 	sortTable("shipStats");
-	
-	//////////////////////
-	// Set system table //
-	//////////////////////
-	var systemKillTable = 	"<tr>" +
-								"<th style=\"text-align:center\">Team A Kills</th>" +
-								"<th style=\"text-align:center\">System name</th>" +
-								"<th style=\"text-align:center\">Team B Kills</th>" +
-							"</tr>";
-	Object.keys(systemKills).forEach(function(v) {
-		var o = systemKills[v];
-		systemKillTable += 	"<tr>" +
-								"<td>" + ((o.a) ? o.a.toLocaleString() + "  (" + abbreviateISK(o.av) + ")" : "-----") + "</td>" +
-								"<td><a target=\"_blank\" href=\"https://zkillboard.com/system/" + v + "/\">" + o.name + "</a></td>" +
-								"<td>" + ((o.b) ? o.b.toLocaleString() + "  (" + abbreviateISK(o.bv) + ")" : "-----") + "</td>" +
-							"</tr>";
-	});
-	$('#systemKills').append(systemKillTable);
-	sortTable("systemKills");
 	
 	
 	// Done. Show the page.
