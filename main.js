@@ -392,7 +392,7 @@ function reqsuc() {
 				var vicID = victim.character_id;
 				var vicSelected = ((allIDs.hasOwnProperty(victim.alliance_id)) ? victim.alliance_id : ((allIDs.hasOwnProperty(victim.corporation_id)) ? victim.corporation_id : ((allIDs.hasOwnProperty(vicID)) ? vicID : null)));
 				var vicPilot = pilotStats.filter(x => x.id == vicID)[0];
-				if (!vicPilot) {
+				if (vicID && !vicPilot) {
 					var temp = {};
 					temp.id = vicID;
 					temp.kills = 0;
@@ -458,7 +458,6 @@ function reqsuc() {
 	var idLength = Object.keys(allIDs).length;
 	
 	if (totalFinished() == idLength && fetching[id].waiting == 0) {
-		console.log(this.responseURL);
 		console.log("Final being called from: " + allIDs[id].name + "\nPage:" + fetching[id].page);
 		$("#load-text").text("All possible kills found...");
 		myConsoleLog.post("All possible kills found (" + allKills.length + ")...");
