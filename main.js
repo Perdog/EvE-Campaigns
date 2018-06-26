@@ -726,6 +726,11 @@ function pullStats() {
 	$('#shipStats').append(shipKillTable);
 	sortTable("shipStats");
 	
+	///////////////////////
+	// Bling kills table //
+	///////////////////////
+	var blingTable = sortBlingKills();
+	$('#blingStats').append(blingTable);
 	
 	// Done. Show the page.
 	console.log("Done");
@@ -769,6 +774,37 @@ function sortPilotKills() {
 	}
 	
 	return pilotTable;
+}
+
+function sortBlingKills() {
+	var blingList = allKills;
+	blingList.sort(by("zkb.totalValue", true));
+	var blingTable = 	"<tr><th colspan=\"5\" style=\"text-align:center\">Top 10 most expensive kills</th></tr>" +
+						"<tr>" +
+							"<th style=\"text-align:center\">Value</th>" +
+							"<th style=\"text-align:center\">Ship</th>" +
+							"<th style=\"text-align:center\">System</th>" +
+							"<th style=\"text-align:center\">Victim</th>" +
+						"</tr>";
+	for (var i = 0; i < Math.min(10, blingList.length); i++) {
+		var vicID = (blingList[i].victim.character_id) ? blingList[i].victim.character_id : blingList[i].victim.ship_type_id;
+		var vicGroupID = (allIDs[blingList[i].victim.alliance_id]) ? allIDs[blingList[i].victim.alliance_id] : (allIDs[blingList[i].victim.corporation_id]) ? allIDs[blingList[i].victim.corporation_id] : allIDs[blingList[i].victim.character_id];
+		var shipID = blingList[i].victim.ship_type_id;
+		var sysID = blingList[i].solar_system_id;
+		var totVal = blingList[i].zkb.totalValue;
+		var pName = pilotStats.filter(e => e.id == vicID)[0];
+		if (!pName)
+			pName = shipKills[vicID];
+		
+		blingTable += 	"<tr>" +
+							"<td><a>" + abbreviateISK(totVal) + "</a></td>" +
+							"<td style=\"text-align:left\"><a href=\"https://zkillboard.com/kill/" + blingList[i].killmail_id + "/\" target=\"_blank\"><img src=\"https://image.eveonline.com/type/" + shipID + "_64.png\" /></a>  <a target=\"_blank\" href=\"https://zkillboard.com/item/" + shipID + "/\">" + shipKills[shipID].name + "</a></td>" +
+							"<td><a target=\"_blank\" href=\"https://zkillboard.com/system/" + sysID + "/\">" + systemKills[sysID].name + "</a></td>" +
+							"<td style=\"text-align:left\"><img src=\"https://image.eveonline.com/character/" + vicID + "_64.jpg\" />  <a target=\"_blank\" href=\"https://zkillboard.com/character/" + vicID + "/\">" + pName.name + "</a> (" + vicGroupID.name + ")</td>" +
+						"</tr>";
+	}
+	
+	return blingTable;
 }
 
 function dateChange(elem, target, attribute) {
