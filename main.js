@@ -389,6 +389,16 @@ function reqsuc() {
 				totalKills[team] += 1;
 				
 				// Track pilot kills
+				var vicID = victim.character_id;
+				var vicSelected = ((allIDs.hasOwnProperty(victim.alliance_id)) ? victim.alliance_id : ((allIDs.hasOwnProperty(victim.corporation_id)) ? victim.corporation_id : ((allIDs.hasOwnProperty(vicID)) ? vicID : null)));
+				var vicPilot = pilotStats.filter(x => x.id == vicID)[0];
+				if (!vicPilot) {
+					var temp = {};
+					temp.id = vicID;
+					temp.kills = 0;
+					temp.group = vicSelected;
+					pilotStats.push(temp);
+				}
 				for (var j = 0; j < data[i].attackers.length; j++) {
 					var attacker = data[i].attackers[j];
 					var attID = attacker.character_id;
@@ -626,7 +636,7 @@ function parseCharacters() {
 	} else {
 		data.forEach(function(key) {
 			if (pilotStats) {
-				var cha = pilotStats.filter(e => e.id == (key.id+""))[0];
+				var cha = pilotStats.filter(e => e.id == key.id)[0];
 				if (cha) {
 					cha.name = key.name;
 				}
@@ -779,14 +789,15 @@ function sortPilotKills() {
 function sortBlingKills() {
 	var blingList = allKills;
 	blingList.sort(by("zkb.totalValue", true));
-	var blingTable = 	"<tr><th colspan=\"5\" style=\"text-align:center\">Top 10 most expensive kills</th></tr>" +
+	var blingTable = 	"<tr><th colspan=\"4\" style=\"text-align:center\">Top 25 most expensive kills</th></tr>" +
 						"<tr>" +
 							"<th style=\"text-align:center\">Value</th>" +
 							"<th style=\"text-align:center\">Ship</th>" +
 							"<th style=\"text-align:center\">System</th>" +
 							"<th style=\"text-align:center\">Victim</th>" +
 						"</tr>";
-	for (var i = 0; i < Math.min(10, blingList.length); i++) {
+	
+	for (var i = 0; i < Math.min(25, blingList.length); i++) {
 		var vicID = (blingList[i].victim.character_id) ? blingList[i].victim.character_id : blingList[i].victim.ship_type_id;
 		var vicGroupID = (allIDs[blingList[i].victim.alliance_id]) ? allIDs[blingList[i].victim.alliance_id] : (allIDs[blingList[i].victim.corporation_id]) ? allIDs[blingList[i].victim.corporation_id] : allIDs[blingList[i].victim.character_id];
 		var shipID = blingList[i].victim.ship_type_id;
