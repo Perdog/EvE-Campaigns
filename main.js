@@ -255,8 +255,10 @@ function serverStatus() {
 
 function serverStatusLoad() {
 	var data = JSON.parse(this.responseText);
-	var isOn = data.players > 0;
-	$('#server-status').text("Server is " + (isOn ? "online" : "offline") + " --- Players online: " + data.players.toLocaleString());
+	if (data.error)
+		$('#server-status').text("Server is offline --- Players online: 0");
+	else
+		$('#server-status').text("Server is online --- Players online: " + data.players.toLocaleString());
 }
 
 function serverStatusError(err) {
