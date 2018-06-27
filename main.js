@@ -435,6 +435,9 @@ function reqsuc() {
 				var shipID = victim.ship_type_id;
 				var attShipID = data[i].attackers.filter(e => e.final_blow == true)[0].ship_type_id;
 				
+				if (!attShipID)
+					attShipID = 11;
+				
 				if (!shipKills.hasOwnProperty(attShipID))
 					shipKills[attShipID] = {};
 				
@@ -740,6 +743,10 @@ function pullStats() {
 						"</tr>";
 	Object.keys(shipKills).forEach(function(v) {
 		var o = shipKills[v];
+		
+		if (!o.a && !o.b)
+			return;
+		
 		shipKillTable += 	"<tr>" +
 								"<td>" + ((o.a) ? (o.a.toLocaleString()  + " (" + abbreviateISK(o.av) + ")") : "-----") + "</td>" +
 								"<td style=\"text-align:left\"><img src=\"https://image.eveonline.com/type/" + v + "_64.png\" />    <a target=\"_blank\" href=\"https://zkillboard.com/item/" + v + "/\">" + o.name + "</a></td>" +
