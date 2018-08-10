@@ -124,6 +124,14 @@ $(document).on('focus', '.searchbox:not(.ui-autocomplete-input)', function(e) {
 	};
 });
 
+$(document).on('click', '.clickable-row', function(e) {
+	window.open($(this).data("href"), "_blank");
+});
+
+$(document).on('click', '.let-me-click', function(e) {
+	e.stopPropagation();
+});
+
 $(document).ready(function(){
 	serverStatus();
 	
@@ -255,8 +263,10 @@ function serverStatus() {
 
 function serverStatusLoad() {
 	var data = JSON.parse(this.responseText);
-	var isOn = data.players > 0;
-	$('#server-status').text("Server is " + (isOn ? "online" : "offline") + " --- Players online: " + data.players.toLocaleString());
+	if (data.error)
+		$('#server-status').text("Server is offline --- Players online: 0");
+	else
+		$('#server-status').text("Server is online --- Players online: " + data.players.toLocaleString());
 }
 
 function serverStatusError(err) {
@@ -389,6 +399,16 @@ function reqsuc() {
 				totalKills[team] += 1;
 				
 				// Track pilot kills
+				var vicID = victim.character_id;
+				var vicSelected = ((allIDs.hasOwnProperty(victim.alliance_id)) ? victim.alliance_id : ((allIDs.hasOwnProperty(victim.corporation_id)) ? victim.corporation_id : ((allIDs.hasOwnProperty(vicID)) ? vicID : null)));
+				var vicPilot = pilotStats.filter(x => x.id == vicID)[0];
+				if (vicID && !vicPilot) {
+					var temp = {};
+					temp.id = vicID;
+					temp.kills = 0;
+					temp.group = vicSelected;
+					pilotStats.push(temp);
+				}
 				for (var j = 0; j < data[i].attackers.length; j++) {
 					var attacker = data[i].attackers[j];
 					var attID = attacker.character_id;
@@ -413,6 +433,13 @@ function reqsuc() {
 				
 				// Track kills per ship per team
 				var shipID = victim.ship_type_id;
+				var attShipID = data[i].attackers.filter(e => e.final_blow == true)[0].ship_type_id;
+				
+				if (!attShipID)
+					attShipID = 11;
+				
+				if (!shipKills.hasOwnProperty(attShipID))
+					shipKills[attShipID] = {};
 				
 				if (!shipKills.hasOwnProperty(shipID))
 					shipKills[shipID] = {};
@@ -448,7 +475,6 @@ function reqsuc() {
 	var idLength = Object.keys(allIDs).length;
 	
 	if (totalFinished() == idLength && fetching[id].waiting == 0) {
-		console.log(this.responseURL);
 		console.log("Final being called from: " + allIDs[id].name + "\nPage:" + fetching[id].page);
 		$("#load-text").text("All possible kills found...");
 		myConsoleLog.post("All possible kills found (" + allKills.length + ")...");
@@ -626,7 +652,7 @@ function parseCharacters() {
 	} else {
 		data.forEach(function(key) {
 			if (pilotStats) {
-				var cha = pilotStats.filter(e => e.id == (key.id+""))[0];
+				var cha = pilotStats.filter(e => e.id == key.id)[0];
 				if (cha) {
 					cha.name = key.name;
 				}
@@ -684,29 +710,6 @@ function pullStats() {
 	$('#killStats-A').find('#value').text(totalValues[0].toLocaleString(undefined, {maximumFractionDigits:2}));
 	$('#killStats-B').find('#value').text(totalValues[1].toLocaleString(undefined, {maximumFractionDigits:2}));
 	
-	// Set pilot stats
-	var pilotTable = sortPilotKills();
-	$('#pilotKills').append(pilotTable);
-	
-	////////////////////
-	// Set ship table //
-	////////////////////
-	var shipKillTable = "<tr>" +
-							"<th style=\"text-align:center\">Team A Kills</th>" +
-							"<th style=\"text-align:center\">Ship type</th>" +
-							"<th style=\"text-align:center\">Team B Kills</th>" +
-						"</tr>";
-	Object.keys(shipKills).forEach(function(v) {
-		var o = shipKills[v];
-		shipKillTable += 	"<tr>" +
-								"<td>" + ((o.a) ? (o.a.toLocaleString()  + " (" + abbreviateISK(o.av) + ")") : "-----") + "</td>" +
-								"<td style=\"text-align:left\"><img src=\"https://image.eveonline.com/type/" + v + "_64.png\" />    <a target=\"_blank\" href=\"https://zkillboard.com/item/" + v + "/\">" + o.name + "</a></td>" +
-								"<td>" + ((o.b) ? (o.b.toLocaleString()  + " (" + abbreviateISK(o.bv) + ")") : "-----") + "</td>" +
-							"</tr>";
-	});
-	$('#shipStats').append(shipKillTable);
-	sortTable("shipStats");
-	
 	//////////////////////
 	// Set system table //
 	//////////////////////
@@ -726,6 +729,44 @@ function pullStats() {
 	$('#systemKills').append(systemKillTable);
 	sortTable("systemKills");
 	
+	// Set pilot stats
+	var pilotTable = sortPilotKills();
+	$('#pilotKills').append(pilotTable);
+	
+	////////////////////
+	// Set ship table //
+	////////////////////
+	var shipKillTable = "<tr>" +
+							"<th style=\"text-align:center\">Team A Kills</th>" +
+							"<th style=\"text-align:center\">Ship type</th>" +
+							"<th style=\"text-align:center\">Team B Kills</th>" +
+						"</tr>";
+	Object.keys(shipKills).forEach(function(v) {
+		var o = shipKills[v];
+		
+		if (!o.a && !o.b)
+			return;
+		
+		shipKillTable += 	"<tr>" +
+								"<td>" + ((o.a) ? (o.a.toLocaleString()  + " (" + abbreviateISK(o.av) + ")") : "-----") + "</td>" +
+								"<td style=\"text-align:left\"><img src=\"https://image.eveonline.com/type/" + v + "_64.png\" />    <a target=\"_blank\" href=\"https://zkillboard.com/item/" + v + "/\">" + o.name + "</a></td>" +
+								"<td>" + ((o.b) ? (o.b.toLocaleString()  + " (" + abbreviateISK(o.bv) + ")") : "-----") + "</td>" +
+							"</tr>";
+	});
+	$('#shipStats').append(shipKillTable);
+	sortTable("shipStats");
+	
+	///////////////////////
+	// Bling kills table //
+	///////////////////////
+	var blingTable = sortBlingKills();
+	$('#blingStats').append(blingTable);
+	
+	///////////////////////
+	// Solo kills table //
+	///////////////////////
+	var soloTable = sortSoloKills();
+	$('#soloStats').append(soloTable);
 	
 	// Done. Show the page.
 	console.log("Done");
@@ -769,6 +810,79 @@ function sortPilotKills() {
 	}
 	
 	return pilotTable;
+}
+
+function sortBlingKills() {
+	var blingList = allKills;
+	blingList.sort(by("zkb.totalValue", true));
+	var blingTable = 	"<tr><th colspan=\"4\" style=\"text-align:center\">Top 25 most expensive kills</th></tr>" +
+						"<tr>" +
+							"<th style=\"text-align:center\">Value</th>" +
+							"<th style=\"text-align:center\">Ship</th>" +
+							"<th style=\"text-align:center\">System</th>" +
+							"<th style=\"text-align:center\">Victim</th>" +
+						"</tr>";
+	
+	for (var i = 0; i < Math.min(25, blingList.length); i++) {
+		var vicID = (blingList[i].victim.character_id) ? blingList[i].victim.character_id : blingList[i].victim.ship_type_id;
+		var vicGroupID = (allIDs[blingList[i].victim.alliance_id]) ? allIDs[blingList[i].victim.alliance_id] : (allIDs[blingList[i].victim.corporation_id]) ? allIDs[blingList[i].victim.corporation_id] : allIDs[blingList[i].victim.character_id];
+		var shipID = blingList[i].victim.ship_type_id;
+		var sysID = blingList[i].solar_system_id;
+		var totVal = blingList[i].zkb.totalValue;
+		var pName = pilotStats.filter(e => e.id == vicID)[0];
+		if (!pName)
+			pName = shipKills[vicID];
+		
+		blingTable += 	"<tr>" +
+							"<td><a>" + abbreviateISK(totVal) + "</a></td>" +
+							"<td style=\"text-align:left\"><a href=\"https://zkillboard.com/kill/" + blingList[i].killmail_id + "/\" target=\"_blank\"><img src=\"https://image.eveonline.com/type/" + shipID + "_64.png\" /></a>  <a target=\"_blank\" href=\"https://zkillboard.com/item/" + shipID + "/\">" + shipKills[shipID].name + "</a></td>" +
+							"<td><a target=\"_blank\" href=\"https://zkillboard.com/system/" + sysID + "/\">" + systemKills[sysID].name + "</a></td>" +
+							"<td style=\"text-align:left\"><img src=\"https://image.eveonline.com/character/" + vicID + "_64.jpg\" />  <a target=\"_blank\" href=\"https://zkillboard.com/character/" + vicID + "/\">" + pName.name + "</a> (" + vicGroupID.name + ")</td>" +
+						"</tr>";
+	}
+	
+	return blingTable;
+}
+
+function sortSoloKills() {
+	var soloList = allKills;
+	soloList.sort(by("zkb.totalValue", true));
+	soloList = soloList.filter(x => x.zkb.solo == true);
+	var blingTable = 	"<tr><th colspan=\"4\" style=\"text-align:center\">Top 25 solo kills</th></tr>" +
+						"<tr>" +
+							"<th style=\"text-align:center\">Value</th>" +
+							"<th style=\"text-align:center\">System</th>" +
+							"<th style=\"text-align:center\">Victim</th>" +
+							"<th style=\"text-align:center\">Killer</th>" +
+						"</tr>";
+	
+	for (var i = 0; i < Math.min(25, soloList.length); i++) {
+		var vicID = (soloList[i].victim.character_id) ? soloList[i].victim.character_id : soloList[i].victim.ship_type_id;
+		var attacker = soloList[i].attackers.filter(e => e.final_blow == true)[0];
+		var attID = (attacker.character_id) ? attacker.character_id : attacker.ship_type_id;
+		var vicGroupID = (allIDs[soloList[i].victim.alliance_id]) ? allIDs[soloList[i].victim.alliance_id] : (allIDs[soloList[i].victim.corporation_id]) ? allIDs[soloList[i].victim.corporation_id] : allIDs[soloList[i].victim.character_id];
+		var attGroupID = (allIDs[attacker.alliance_id]) ? allIDs[attacker.alliance_id] : (allIDs[attacker.corporation_id]) ? allIDs[attacker.corporation_id] : allIDs[attacker.character_id];
+		var vicShipID = soloList[i].victim.ship_type_id;
+		var attShipID = attacker.ship_type_id;
+		var sysID = soloList[i].solar_system_id;
+		var totVal = soloList[i].zkb.totalValue;
+		var pName = pilotStats.filter(e => e.id == vicID)[0];
+		var apName = pilotStats.filter(e => e.id == attID)[0];
+		
+		if (!pName)
+			pName = shipKills[vicID];
+		if (!apName)
+			apName = shipKills[attID];
+		
+		blingTable += 	"<tr class=\"clickable-row\" data-href=\"https://zkillboard.com/kill/" + soloList[i].killmail_id + "/\">" +
+							"<td style=\"text-align:center;\"><a>" + abbreviateISK(totVal) + "</a></td>" +
+							"<td style=\"text-align:center;\"><a class=\"let-me-click\" target=\"_blank\" href=\"https://zkillboard.com/system/" + sysID + "/\">" + systemKills[sysID].name + "</a></td>" +
+							"<td style=\"text-align:left;\"><img title=\"" + shipKills[vicShipID].name + "\" src=\"https://image.eveonline.com/type/" + vicShipID + "_64.png\" /><img src=\"https://image.eveonline.com/character/" + vicID + "_64.jpg\" />  <a class=\"let-me-click\" target=\"_blank\" href=\"https://zkillboard.com/character/" + vicID + "/\">" + pName.name + "</a> (" + vicGroupID.name + ")</td>" +
+							"<td style=\"text-align:left;\"><img title=\"" + shipKills[attShipID].name + "\" src=\"https://image.eveonline.com/type/" + attShipID + "_64.png\" /><img src=\"https://image.eveonline.com/character/" + attID + "_64.jpg\" />  <a class=\"let-me-click\" target=\"_blank\" href=\"https://zkillboard.com/character/" + attID + "/\">" + ((apName) ? apName.name : "Unknown") + "</a> (" + attGroupID.name + ")</td>" +
+						"</tr>";
+	}
+	
+	return blingTable;
 }
 
 function dateChange(elem, target, attribute) {
