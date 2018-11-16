@@ -366,10 +366,11 @@ function reqsuc() {
 		fetching[id].keepGoing = false;
 	}
 	
+	console.log(data);
 	// Lets do something with the data
 	for (var i = 0; i < data.length; i++) {
-		console.log(victim);
 		var victim = data[i].victim;
+		console.log(victim);
 		// Used for the arrays. Defaulting to -1 for error catching. Should never see it, but juuuuuust in case.
 		var team = getTeam(victim);
 		
