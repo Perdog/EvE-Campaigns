@@ -342,6 +342,7 @@ function fetchKillMails(id) {
 	maxWait++;
 	
 	var zurl = base + allIDs[id].type + "ID/" + id + sTime + dates[0] + eTime + dates[1] + page + pn + dontForgetThis;
+	console.log(zurl);
 	var fetch = new XMLHttpRequest();
 	fetch.onload = reqsuc;
 	fetch.onerror = reqerror;
